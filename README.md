@@ -1,1 +1,1 @@
-# gtt-model
+# acoustic-solo-dadaGP
