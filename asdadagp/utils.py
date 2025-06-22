@@ -19,15 +19,13 @@ def diff(number_list):
 def get_instrument_group(track):
     midinumber = track.channel.instrument
     if midinumber not in instrument_groups:
-        print(
-            f"Error: Unsupported instrument {midinumber}. Only clean guitar is allowed."
-        )
+        raise ValueError(f"Error: Unsupported instrument {midinumber}. Only clean guitar is allowed.")
     return "clean"
 
 
 # Test if the set of strings is a supported guitar tuning. Give it a notename list
-def is_good_guitar_tuning(strings):
-    return True  # Allowing all tunings
+# def is_good_guitar_tuning(strings):
+#     return True  # Allowing all tunings
 
 
 def get_tuning_type(instrument_group, strings):

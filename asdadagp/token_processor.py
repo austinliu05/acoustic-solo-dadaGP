@@ -1,32 +1,26 @@
-
-
 import re
 from typing import List, Dict, Tuple, Union
 import os
+from typing import Union, List
 
 
-class GpTokenProcessor:
+
+class GpSongTokensProcessor:
     """
-    Token pipeline:
-        1. Merge tracks
+    Note token pipeline:
+    1. merge tracks & remove clean prefixes
+
 
     """
-    def __init__(self):
-        self.tokens = {}
+    def __init__(self, tokens: Union[str, List[str]]):
+        if isinstance(tokens, str):
+            with open(tokens, 'r') as f:
+                self.tokens = [line.strip() for line in f if line.strip()]
+        elif isinstance(tokens, list):
+            self.tokens = tokens
+        else:
+            raise ValueError("A path to token txt file or a list of tokens is required.")
 
-    @classmethod
-    def from_folder(cls, path: str):
-        """
-        Loads tokens from a folder containing token files.
-        Each file should contain one token per line.
-        """
-        processor = cls()
-        for filename in os.listdir(path):
-            if filename.endswith(".txt"):
-                with open(os.path.join(path, filename), 'r') as f:
-                    tokens = [line.strip() for line in f if line.strip()]
-                    processor.tokens[filename.replace('.txt', '')] = tokens
-        return processor
 
 
 

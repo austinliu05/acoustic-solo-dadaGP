@@ -11,7 +11,7 @@ from .utils import (
     get_measure_tokens,
     get_tuning_type,
     guitar_downtunage,
-    is_good_guitar_tuning,
+    # is_good_guitar_tuning,
     note_effect_list,
     oops_theres_a_conflicting_beatfx,
     oops_theres_a_note_here,
@@ -20,7 +20,7 @@ from .utils import (
 
 
 # Takes a GP file, converts to token format
-def guitarpro2tokens(song, artist, verbose=False):
+def guitarpro2tokens(song, artist, verbose=False, note_tuning=False):
     # - Map every track in song to an instrument group
     # - Remove SoundFX tracks
     # - Throw error if any track has an instrument change event in mixTable
@@ -39,12 +39,12 @@ def guitarpro2tokens(song, artist, verbose=False):
     ## Identify channels by group
 
     tracks_by_group = {
-        "drums": [],
-        "distorted": [],
+        # "drums": [],
+        # "distorted": [],
         "clean": [],
-        "bass": [],
-        "leads": [],
-        "pads": [],
+        # "bass": [],
+        # "leads": [],
+        # "pads": [],
         "remove": [],
     }
 
@@ -64,28 +64,23 @@ def guitarpro2tokens(song, artist, verbose=False):
             continue
         break
 
-    max_bass = 1
-    max_clean = 2
-    max_distorted = 3
-    n_bass = len(tracks_by_group["bass"])
+    # max_bass = 1
+    max_clean = 3
+    # max_distorted = 3
+    # n_bass = len(tracks_by_group["bass"])
     n_clean = len(tracks_by_group["clean"])
-    n_distorted = len(tracks_by_group["distorted"])
-    assert n_bass <= max_bass, "Too many bass guitar channels. Max %s. You have %s" % (
-        max_bass,
-        n_bass,
-    )
+    # n_distorted = len(tracks_by_group["distorted"])
+    # assert n_bass <= max_bass, "Too many bass guitar channels. Max %s. You have %s" % (
+    #     max_bass,
+    #     n_bass,
+    # )
     assert (
         n_clean <= max_clean
     ), "Too many clean/acoustic guitar channels. Max %s. You have %s" % (
         max_clean,
         n_clean,
     )
-    assert (
-        n_distorted <= max_distorted
-    ), "Too many distorted/overdrive guitar channels. Max %s. You have %s" % (
-        max_distorted,
-        n_distorted,
-    )
+
 
     verbose and print(tracks_by_group)
 
@@ -119,21 +114,35 @@ def guitarpro2tokens(song, artist, verbose=False):
     # Verify support TUNING
     downtunages = []
     tuning_types = {}  # keep tracking of tuning types
-
+    ref_strings = []
     for t, track in enumerate(song.tracks):
         midinumber = track.channel.instrument
         group_name = instrument_groups[midinumber]
         strings = [str(string) for string in track.strings]
+        if ref_strings == []:
+            ref_strings = strings
+        else:
+            if ref_strings != strings:
+                raise ValueError(
+                    "Error: All guitar tracks must have the same strings. "
+                    "Track %s has strings %s, but previous track had %s" % (
+                        t,
+                        " ".join(strings),
+                        " ".join(ref_strings),
+                    )
+                )
+            else:
+                ref_strings = strings
         if track.isPercussionTrack:
             tuning_types[t] = "drums"
             continue
-        if group_name == "distorted" or group_name == "clean":
-            assert is_good_guitar_tuning(
-                strings
-            ), "Error: Track %s has unsupported guitar tuning: %s" % (
-                t,
-                " ".join(strings),
-            )
+        if group_name == "clean":
+            # assert is_good_guitar_tuning(
+            #     strings
+            # ), "Error: Track %s has unsupported guitar tuning: %s" % (
+            #     t,
+            #     " ".join(strings),
+            # )
             downtunages.append(guitar_downtunage(strings))
         tuning_types[t] = get_tuning_type(group_name, strings)
 
@@ -169,7 +178,11 @@ def guitarpro2tokens(song, artist, verbose=False):
 
     downtune_token = "downtune:%s" % pitch_shift
 
-    head_tokens = [artist, downtune_token, tempo_token, "start"]
+    # head_tokens = [artist, downtune_token, tempo_token, "start"]
+    head_tokens = [artist, downtune_token, tempo_token]
+    if not note_tuning:
+        head_tokens.extend(ref_strings)
+    head_tokens.append("start")
 
     tunings = ["Order of strings: (1,2,3,4,5,6)"]
 
@@ -420,9 +433,13 @@ def guitarpro2tokens(song, artist, verbose=False):
                 del e["effects"]
                 # append the NOTE  token
                 # w_events.append(e)
-                body_tokens.append(
-                    f"{e['instrument_prefix']}:note:s{e['string']}:f{e['fret']}:{tuning_for_string}"
-                )
+                note_token = f"{e['instrument_prefix']}:note:s{e['string']}:f{e['fret']}"
+                if note_tuning:
+                    note_token += f":{tuning_for_string}"
+                body_tokens.append(note_token)
+                # body_tokens.append(
+                #     f"{e['instrument_prefix']}:note:s{e['string']}:f{e['fret']}:{tuning_for_string}"
+                # )
 
                 if len(effects) > 0:
                     # append the NOTE EFFECTS
