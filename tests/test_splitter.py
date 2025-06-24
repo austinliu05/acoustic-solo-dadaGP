@@ -4,10 +4,10 @@ from asdadagp.token_splitter import (
     split_rare_token,
     split_trill_token,
     split_wait_token,
+    unsplit_bend_fx,
     unsplit_fx,
     unsplit_grace_nfx,
     unsplit_trill_nfx,
-    unsplit_bend_fx,
 )
 
 

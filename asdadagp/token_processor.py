@@ -13,6 +13,11 @@ class GpSongTokensProcessor:
 
     """
     def __init__(self, tokens: Union[str, List[str]]):
+        """
+
+        Args:
+            tokens ():
+        """
         if isinstance(tokens, str):
             with open(tokens, 'r') as f:
                 self.tokens = [line.strip() for line in f if line.strip()]
@@ -20,6 +25,11 @@ class GpSongTokensProcessor:
             self.tokens = tokens
         else:
             raise ValueError("A path to token txt file or a list of tokens is required.")
+
+        self.measures = None
+        self.beats = None
+
+
 
 
 

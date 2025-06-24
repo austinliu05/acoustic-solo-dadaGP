@@ -3,11 +3,11 @@ from fractions import Fraction
 
 import guitarpro as gp
 from asdadagp.utils import (
+    convert_strings_for_pygp,
     convert_to_nearest_supported_time,
     diff,
     guitar_downtunage,
     noteNumber,
-    convert_strings_for_pygp
 )
 
 DATA_FOLDER_PATH = os.path.join(
@@ -60,5 +60,3 @@ def test_load_score():
     new_track.strings = convert_strings_for_pygp(strings, -2)
     # print(new_track.strings)
     assert new_track.strings[0].value == 62
-
-
