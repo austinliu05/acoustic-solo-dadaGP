@@ -1,17 +1,17 @@
-import re
-from typing import List, Dict, Tuple, Union
+import logging
 import os
-from typing import Union, List
+import re
+from typing import Dict, List, Tuple, Union
 
+_LOGGER = logging.getLogger(__name__)
 
 
 class GpSongTokensProcessor:
     """
     Note token pipeline:
     1. merge tracks & remove clean prefixes
-
-
     """
+
     def __init__(self, tokens: Union[str, List[str]]):
         """
 
@@ -19,19 +19,72 @@ class GpSongTokensProcessor:
             tokens ():
         """
         if isinstance(tokens, str):
-            with open(tokens, 'r') as f:
+            with open(tokens, "r") as f:
                 self.tokens = [line.strip() for line in f if line.strip()]
         elif isinstance(tokens, list):
             self.tokens = tokens
         else:
-            raise ValueError("A path to token txt file or a list of tokens is required.")
+            raise ValueError(
+                "A path to token txt file or a list of tokens is required."
+            )
+
+        self.get_string_tunings()
 
         self.measures = None
         self.beats = None
+        self.string_tunings = None
 
+    def get_string_tunings(self):
+        if self.tokens[9] == "start":
+            self.note_tuning = False
+        elif self.tokens[3] == "start":
+            self.note_tuning = True
+        else:
+            self.note_tuning = True
+            _LOGGER.warning("'start' token not found in expected positions.")
 
+        if self.note_tuning:
+            string_tuning_dict = {}
+            while len(string_tuning_dict) < 6:
+                for token in self.tokens:
+                    if "note" in token:
+                        start = token.index("note") + len("note")
+                        guitar_string = int(token[start + 3])
+                        tuning = token.split(":")[-1]
+                        string_tuning_dict[guitar_string] = tuning
 
+            self.string_tunings = [string_tuning_dict[i] for i in range(1, 7)]
+        else:
+            self.string_tunings = self.tokens[
+                3:9
+            ]  # Assuming the first 6 tokens after "start" are the string tunings
 
+    def split_measures(self):
+        """
+        Extracts measures from the tokens.
+        """
+        token_measures = []
+        id_measures = []
+        current_measure_tokens = []
+        current_measure_token_ids = []
+        current_measure_index = 0
+        last_measure_index = 0
+        in_repeat = False
+        repeat_start_index = -1
+
+        for i, token in enumerate(self.tokens):
+            if token_measures == [] and current_measure_tokens == []:
+                if token != "new_measure":
+                    continue
+            if token == "measure:repeat_open":
+                in_repeat = True
+                repeat_start_index = current_measure_index
+            elif token == "new_measure":
+                token_measures.append(current_measure_tokens)
+                id_measures.append(current_measure_token_ids)
+                current_measure_index += 1
+
+            # elif
 
 
 def is_instrumental(token: str) -> bool:
@@ -56,7 +109,9 @@ def strip_non_instrumental(tokens: List[str]) -> Tuple[List[str], Dict[int, str]
     return pure_tokens, removed_map
 
 
-def restore_non_instrumental(pure_tokens: List[str], removed_map: Dict[int, str]) -> List[str]:
+def restore_non_instrumental(
+    pure_tokens: List[str], removed_map: Dict[int, str]
+) -> List[str]:
     """
     Rebuilds a full token list.
 
@@ -82,9 +137,9 @@ def restore_non_instrumental(pure_tokens: List[str], removed_map: Dict[int, str]
 def sort_notes(pruned_notes: List[str]):
     # Define a key function for sorting based on "s<number>:" in the token.
     def extract_s_number(s):
-        match = re.search(r's(\d+):', s)
+        match = re.search(r"s(\d+):", s)
         # If not found, push token to the end.
-        return int(match.group(1)) if match else float('inf')
+        return int(match.group(1)) if match else float("inf")
 
     sorted_notes = sorted(pruned_notes, key=extract_s_number)
     return sorted_notes
@@ -139,7 +194,7 @@ def expand_repeats(tokens: List[str]) -> List[str]:
                 continue
 
             count = int(m.group(1))
-            inner_tokens = tokens[i + 1:j]
+            inner_tokens = tokens[i + 1 : j]
 
             for _ in range(count):
                 expanded.extend(inner_tokens)
@@ -156,10 +211,12 @@ def expand_repeats(tokens: List[str]) -> List[str]:
 def process_raw_acoustic_solo_tokens(tokens: Union[str, List[str]]):
     if isinstance(tokens, str):
         try:
-            with open(tokens, 'r') as f:
+            with open(tokens, "r") as f:
                 tokens = [t.strip() for t in f.readlines() if t.strip()]
         except FileNotFoundError:
-            raise ValueError("Please provide either encoded tokens or the path to the token file")
+            raise ValueError(
+                "Please provide either encoded tokens or the path to the token file"
+            )
 
     # Split tokens into header, body, and footer.
     header = []

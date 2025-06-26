@@ -28,8 +28,12 @@ def test_strings_tokens():
                 print(token)
             assert token.endswith(celtic_tuning[guitar_string])
 
+    assert tokens[3] == "start"
+
     tokens_without_tuning = guitarpro2tokens(
         song, "unknown", verbose=True, note_tuning=False
     )
     for i in range(3, 9):
         assert tokens_without_tuning[i] == celtic_tuning[f"s{i-2}"]
+
+    assert tokens_without_tuning[9] == "start"

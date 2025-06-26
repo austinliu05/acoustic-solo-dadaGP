@@ -3,7 +3,7 @@ import guitarpro as gp
 from .const import instrument_groups
 from .token_splitter import split_rare_token
 from .utils import (
-    beat_effect_list,
+    beat_effect_list,  # is_good_guitar_tuning,
     convert_spn_to_common,
     get_fret,
     get_instrument_group,
@@ -11,7 +11,6 @@ from .utils import (
     get_measure_tokens,
     get_tuning_type,
     guitar_downtunage,
-    # is_good_guitar_tuning,
     note_effect_list,
     oops_theres_a_conflicting_beatfx,
     oops_theres_a_note_here,
@@ -81,7 +80,6 @@ def guitarpro2tokens(song, artist, verbose=False, note_tuning=False):
         n_clean,
     )
 
-
     verbose and print(tracks_by_group)
 
     # Throw error if there is an instrument change
@@ -125,7 +123,8 @@ def guitarpro2tokens(song, artist, verbose=False, note_tuning=False):
             if ref_strings != strings:
                 raise ValueError(
                     "Error: All guitar tracks must have the same strings. "
-                    "Track %s has strings %s, but previous track had %s" % (
+                    "Track %s has strings %s, but previous track had %s"
+                    % (
                         t,
                         " ".join(strings),
                         " ".join(ref_strings),
@@ -433,7 +432,9 @@ def guitarpro2tokens(song, artist, verbose=False, note_tuning=False):
                 del e["effects"]
                 # append the NOTE  token
                 # w_events.append(e)
-                note_token = f"{e['instrument_prefix']}:note:s{e['string']}:f{e['fret']}"
+                note_token = (
+                    f"{e['instrument_prefix']}:note:s{e['string']}:f{e['fret']}"
+                )
                 if note_tuning:
                     note_token += f":{tuning_for_string}"
                 body_tokens.append(note_token)

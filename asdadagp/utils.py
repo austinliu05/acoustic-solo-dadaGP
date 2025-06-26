@@ -19,7 +19,9 @@ def diff(number_list):
 def get_instrument_group(track):
     midinumber = track.channel.instrument
     if midinumber not in instrument_groups:
-        raise ValueError(f"Error: Unsupported instrument {midinumber}. Only clean guitar is allowed.")
+        raise ValueError(
+            f"Error: Unsupported instrument {midinumber}. Only clean guitar is allowed."
+        )
     return "clean"
 
 
