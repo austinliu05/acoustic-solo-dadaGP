@@ -1,3 +1,18 @@
+"""
+Token Processor Script
+
+This module processes raw acoustic solo token files and outputs structured JSON representations
+in three modes:
+
+- **full** (default): Outputs the complete sequence of processed tokens as a flat list.
+- **-m**: Splits the token sequence into measures based on the "new_measure" marker, producing a list of measures (each a list of tokens).
+- **-b**: Splits the sequence into beats by first splitting into measures and then splitting each measure on "wait:" markers, producing a flattened list of beats. by first splitting into measures and then splitting each measure on "wait:" markers, producing a flattened list of beats.
+
+Usage:
+    python token_processor.py           # full mode
+    python token_processor.py -m        # measures mode
+    python token_processor.py -b        # beats mode
+"""
 import re
 from typing import List, Dict, Tuple, Union
 import os
