@@ -1,0 +1,19 @@
+[
+  [
+    "note:s6:f0:E3",
+    "nfx:heavy_accentuated_note",
+    "nfx:palm_mute",
+    "note:s4:f2:D4",
+    "nfx:let_ring"
+  ],
+  [
+    "rest"
+  ],
+  [
+    "rest",
+    "nfx:tie"
+  ],
+  [
+    "note:s4:f6:D4"
+  ]
+]

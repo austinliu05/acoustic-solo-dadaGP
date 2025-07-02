@@ -431,7 +431,3 @@ assert unsplit_bend_fx({"token": 'nfx:bend:type2', "params": ['param:val0:vib0',
 test_split_unsplit("bfx:tremolo_bar:type6:pos0:val0:vib0:pos6:val-4:vib0:pos12:val0:vib0")
 test_split_unsplit("bfx:tremolo_bar:type1:pos0:val0:vib0:pos6:val-4:vib0")
 test_split_unsplit("nfx:bend:type2:pos0:val0:vib0:pos2:val2:vib0:pos4:val2:vib0:pos6:val0:vib0:pos12:val0:vib0")
-
-
-
-    
