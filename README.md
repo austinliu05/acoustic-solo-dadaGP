@@ -1,7 +1,6 @@
 # acoustic-solo-dadaGP
 
-> Modified `dadaGP` package to handle acoustic fingerstyle tabs. This includes custom tunings and simplified single track processing.
-
+A modification of [DadaGP](https://github.com/dada-bots/dadaGP/tree/main) customized for gp files of acoustic solo. It supports gp files with alternative string tuning and/or more than 2 acoustic tracks.
 ---
 
 ## Table of Contents
@@ -43,4 +42,3 @@ This repo is a **fork** of [dadaGP](https://github.com/dada-bots/dadaGP) by `dad
 This fork is released under the **MIT License**. See [LICENSE](LICENSE).
 
 The original project `dadaGP` by `dada-bots` is also under MIT; see their [LICENSE](https://github.com/dada-bots/dadaGP?tab=MIT-1-ov-file).
-

@@ -1,0 +1,32 @@
+[
+  [
+    "note:s6:f0:E3",
+    "nfx:heavy_accentuated_note",
+    "nfx:palm_mute",
+    "note:s4:f2:D4",
+    "nfx:let_ring"
+  ],
+  [
+    "note:s6:f0:E3",
+    "rest",
+    "nfx:heavy_accentuated_note",
+    "nfx:palm_mute",
+    "note:s4:f2:D4",
+    "nfx:let_ring"
+  ],
+  [
+    "note:s6:f0:E3",
+    "rest",
+    "nfx:heavy_accentuated_note",
+    "nfx:palm_mute",
+    "note:s4:f2:D4",
+    "nfx:let_ring"
+  ],
+  [
+    "rest"
+  ],
+  [
+    "rest",
+    "nfx:tie"
+  ]
+]
