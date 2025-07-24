@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "acoustic_solo_dadagp"
+version = "0.1.0"
+description = "A package for processing guitar pro files and related tasks."
+authors = [
+    { name="Austin Liu", email="austin_f_liu@brown.edu" }
+]
+readme = "README.md"
+requires-python = ">=3.7"
+license = { file = "LICENSE" }
+dependencies = [
+    # Add your runtime dependencies here, e.g. "numpy", "pandas"
+]
+
+[project.urls]
+"Homepage" = "https://github.com/yourusername/acoustic-solo-dadaGP"
+
+[tool.setuptools]
+package-dir = {"" = "src"} 
