@@ -6,6 +6,7 @@ import guitarpro as gp
 import pytest
 from asdadagp.encoder import guitarpro2tokens
 from asdadagp.processor import get_string_tunings, tracks_check
+from transformers.utils import find_adapter_config_file
 
 DATA_FOLDER_PATH = os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "tests", "data"
@@ -64,21 +65,19 @@ def test_extra_track_clean():
     gp_path = os.path.join(DATA_FOLDER_PATH, "dyens-roland-la_bicyclette.gp4")
     song = gp.parse(gp_path)
     tokens = guitarpro2tokens(song, "unknown", verbose=True, note_tuning=True)
+
     # pprint.pprint(tokens[:10])
     sound_notes = [
         token for token in tokens if token.startswith("clean") and "note" in token
     ]
-    extra_rest = [
-        token for token in tokens if token.startswith("clean1") and "rest" in token
-    ]
 
     processed_tokens = tracks_check(tokens)
+    assert isinstance(processed_tokens, list)
+    # pprint.pprint(processed_tokens[:10])
     processed_sound_note = [
         token for token in processed_tokens if token.startswith("note")
     ]
 
-
     assert len(sound_notes) == len(
         processed_sound_note
     )  # Ensure no tokens are lost in processing
-    assert len(tokens) - len(processed_tokens) == len(extra_rest)

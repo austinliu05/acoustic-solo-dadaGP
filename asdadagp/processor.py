@@ -44,26 +44,22 @@ def get_string_tunings(tokens: List[str]) -> List[str]:
         ]  # Assuming the first 6 tokens after "start" are the string tunings
 
 
-def merge_tracks_and_prune(notes: List[str]):
-    processed_notes = []
-    has_rest = False
+def merge_tracks_and_prune(notes: List[str]) -> List[str]:
 
-    for token in notes:
-        # Remove any track prefix ("clean0:" or "clean1:" etc).
-        cleaned_token = re.sub(r"clean\d+:", "", token)
+    processed_notes = [re.sub(r"clean\d+:", "", token).strip() for token in notes]
 
-        if cleaned_token == "rest":
-            # If we haven't already added a rest token for this group, add it.
-            if not has_rest:
-                processed_notes.append("rest")
-                has_rest = True
-        else:
-            processed_notes.append(cleaned_token)
+    # for token in notes:
+    #     # Remove any track prefix ("clean0:" or "clean1:" etc).
+    #     cleaned_token = re.sub(r"clean\d+:", "", token)
+    #     processed_notes.append(cleaned_token)
 
-    return sort_notes(processed_notes)
+    if set(processed_notes) == {"rest"}:
+        return ["rest"]
+    else:
+        return sort_notes([note for note in processed_notes if note != "rest"])
 
 
-def sort_notes(pruned_notes: List[str]):
+def sort_notes(pruned_notes: List[str]) -> List[str]:
     # Define a key function for sorting based on "s<number>:" in the token.
     def extract_s_number(s):
         match = re.search(r"s(\d+):", s)
@@ -82,21 +78,19 @@ def tracks_check(tokens: List[str]) -> List[str]:
         if token.startswith("clean"):
             current_group.append(token)
             continue
+        else:
+            if current_group:
+                merged = merge_tracks_and_prune(current_group)
+                processed.extend(merged)
+                current_group = []
 
-        if current_group:
-            merged = merge_tracks_and_prune(current_group)
-            processed.extend(merged)
-            current_group = []
-
-        processed.append(token)
+            processed.append(token)
 
     if current_group:
         merged = merge_tracks_and_prune(current_group)
         processed.extend(merged)
 
     return processed
-
-
 
 
 def process_tokens(
@@ -120,10 +114,6 @@ def process_tokens(
     results["original"] = tokens
     results["tuning"] = get_string_tunings(tokens)
     # step 1. merge tracks
-
-
-
-
 
     return results
 
@@ -149,9 +139,6 @@ def process_raw_tokens(tokens: Union[str, List[str]]) -> Dict[str, Dict]:
 
 def raw_tokens_splits(tokens):
     pass
-
-
-
 
 
 class GpSongTokensProcessor:
@@ -253,36 +240,6 @@ def restore_non_instrumental(
     return reconstructed
 
 
-def sort_notes(pruned_notes: List[str]):
-    # Define a key function for sorting based on "s<number>:" in the token.
-    def extract_s_number(s):
-        match = re.search(r"s(\d+):", s)
-        # If not found, push token to the end.
-        return int(match.group(1)) if match else float("inf")
-
-    sorted_notes = sorted(pruned_notes, key=extract_s_number)
-    return sorted_notes
-
-
-def merge_tracks_and_prune(notes: List[str]):
-    processed_notes = []
-    has_rest = False
-
-    for token in notes:
-        # Remove any track prefix ("clean0:" or "clean1:" etc).
-        cleaned_token = re.sub(r"clean\d+:", "", token)
-
-        if cleaned_token == "rest":
-            # If we haven't already added a rest token for this group, add it.
-            if not has_rest:
-                processed_notes.append("rest")
-                has_rest = True
-        else:
-            processed_notes.append(cleaned_token)
-
-    return sort_notes(processed_notes)
-
-
 def expand_repeats(tokens: List[str]) -> List[str]:
     """
     Scan through tokens. Whenever "measure:repeat_open" is found, collect everything
@@ -362,7 +319,7 @@ def process_raw_acoustic_solo_tokens(tokens: Union[str, List[str]]):
     expanded_body = expand_repeats(body)
 
     # Process body tokens by grouping consecutive 'clean' tokens,
-    processed_body = []
+    processed = []
     current_group = []
 
     prefixes = ("note", "bfs", "nfx", "wait")
@@ -378,16 +335,16 @@ def process_raw_acoustic_solo_tokens(tokens: Union[str, List[str]]):
 
         if current_group:
             merged = merge_tracks_and_prune(current_group)
-            processed_body.extend(merged)
+            processed.extend(merged)
             current_group = []
 
-        processed_body.append(token)
+        processed.append(token)
 
     if current_group:
         merged = merge_tracks_and_prune(current_group)
-        processed_body.extend(merged)
+        processed.extend(merged)
 
-    return processed_body
+    return processed
 
 
 # def main():
