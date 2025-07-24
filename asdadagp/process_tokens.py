@@ -1,9 +1,11 @@
-import re
-from typing import List, Dict, Tuple, Union
 import os
+import re
+from typing import Dict, List, Tuple, Union
+
 
 def is_instrumental(token: str) -> bool:
     return token.startswith("note:")
+
 
 def strip_non_instrumental(tokens: List[str]) -> Tuple[List[str], Dict[int, str]]:
     """
@@ -14,7 +16,7 @@ def strip_non_instrumental(tokens: List[str]) -> Tuple[List[str], Dict[int, str]
     """
     pure_tokens: List[str] = []
     removed_map: Dict[int, str] = {}
-    
+
     for idx, tok in enumerate(tokens):
         if is_instrumental(tok):
             pure_tokens.append(tok)
@@ -22,7 +24,10 @@ def strip_non_instrumental(tokens: List[str]) -> Tuple[List[str], Dict[int, str]
             removed_map[idx] = tok
     return pure_tokens, removed_map
 
-def restore_non_instrumental(pure_tokens: List[str], removed_map: Dict[int, str]) -> List[str]:
+
+def restore_non_instrumental(
+    pure_tokens: List[str], removed_map: Dict[int, str]
+) -> List[str]:
     """
     Rebuilds a full token list.
 
@@ -31,8 +36,8 @@ def restore_non_instrumental(pure_tokens: List[str], removed_map: Dict[int, str]
         items from pure_tokens, in order.
     """
     total_length = len(pure_tokens) + len(removed_map)
-    reconstructed = [None] * total_length  
-    
+    reconstructed = [None] * total_length
+
     for idx, tok in removed_map.items():
         reconstructed[idx] = tok
 
@@ -44,23 +49,26 @@ def restore_non_instrumental(pure_tokens: List[str], removed_map: Dict[int, str]
 
     return reconstructed
 
+
 def sort_notes(pruned_notes: List[str]):
     # Define a key function for sorting based on "s<number>:" in the token.
     def extract_s_number(s):
-        match = re.search(r's(\d+):', s)
+        match = re.search(r"s(\d+):", s)
         # If not found, push token to the end.
-        return int(match.group(1)) if match else float('inf')
+        return int(match.group(1)) if match else float("inf")
+
     sorted_notes = sorted(pruned_notes, key=extract_s_number)
     return sorted_notes
 
+
 def merge_tracks_and_prune(notes: List[str]):
     processed_notes = []
-    has_rest = False 
-    
+    has_rest = False
+
     for token in notes:
         # Remove any track prefix ("clean0:" or "clean1:" etc).
         cleaned_token = re.sub(r"clean\d+:", "", token)
-        
+
         if cleaned_token == "rest":
             # If we haven't already added a rest token for this group, add it.
             if not has_rest:
@@ -68,8 +76,9 @@ def merge_tracks_and_prune(notes: List[str]):
                 has_rest = True
         else:
             processed_notes.append(cleaned_token)
-    
+
     return sort_notes(processed_notes)
+
 
 def expand_repeats(tokens: List[str]) -> List[str]:
     """
@@ -101,7 +110,7 @@ def expand_repeats(tokens: List[str]) -> List[str]:
                 continue
 
             count = int(m.group(1))
-            inner_tokens = tokens[i+1:j]
+            inner_tokens = tokens[i + 1 : j]
 
             for _ in range(count):
                 expanded.extend(inner_tokens)
@@ -114,14 +123,17 @@ def expand_repeats(tokens: List[str]) -> List[str]:
 
     return expanded
 
+
 def process_raw_acoustic_solo_tokens(tokens: Union[str, List[str]]):
     if isinstance(tokens, str):
         try:
-            with open(tokens, 'r') as f:
+            with open(tokens, "r") as f:
                 tokens = [t.strip() for t in f.readlines() if t.strip()]
         except FileNotFoundError:
-            raise ValueError("Please provide either encoded tokens or the path to the token file")
-    
+            raise ValueError(
+                "Please provide either encoded tokens or the path to the token file"
+            )
+
     # Split tokens into header, body, and footer.
     header = []
     body = []
@@ -143,7 +155,7 @@ def process_raw_acoustic_solo_tokens(tokens: Union[str, List[str]]):
                 header.append(token)
             else:
                 footer.append(token)
-    
+
     expanded_body = expand_repeats(body)
 
     # Process body tokens by grouping consecutive 'clean' tokens,
@@ -167,11 +179,11 @@ def process_raw_acoustic_solo_tokens(tokens: Union[str, List[str]]):
             current_group = []
 
         processed_body.append(token)
-    
+
     if current_group:
         merged = merge_tracks_and_prune(current_group)
         processed_body.extend(merged)
-    
+
     return processed_body
 
 
@@ -217,12 +229,15 @@ def main():
             print(f"  → Fully processed tokens saved to: {processed_filename}")
 
             reconstructed_filename = f"{base_name}_reconstructed{ext}"
-            with open(os.path.join(examples_folder, reconstructed_filename), "w") as f_recon:
+            with open(
+                os.path.join(examples_folder, reconstructed_filename), "w"
+            ) as f_recon:
                 f_recon.write("\n".join(reconstructed))
             print(f"  → Reconstructed tokens saved to: {reconstructed_filename}")
 
         except Exception as e:
             print(f"An error occurred while processing {filename}: {e}")
+
 
 if __name__ == "__main__":
     main()

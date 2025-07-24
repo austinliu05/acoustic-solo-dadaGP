@@ -1,12 +1,6 @@
-#!/usr/bin/python
-
 import os
-import json
 import guitarpro # Note: works only with PyGuitarPro version 0.6
 import guitarpro as gp
-from collections import Counter
-import re
-import json
 import math
 from fractions import Fraction
 import sys
@@ -21,7 +15,8 @@ instrument_groups = {
  25: 'clean',
  26: 'clean',
  27: 'clean',
- 28: 'clean'}
+ 28: 'clean'
+}
 
 # Basically the same function as numpy.diff
 # Subtracts consecutive numbers
