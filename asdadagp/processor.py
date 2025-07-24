@@ -70,31 +70,42 @@ def sort_notes(pruned_notes: List[str]) -> List[str]:
     return sorted_notes
 
 
-def tracks_check(tokens: List[str]) -> List[str]:
+def tracks_check(tokens: List[str], merge_track: bool = True) -> List[str]:
     processed = []
-    current_group = []
-    for token in tokens:
-        # Group any 'clean' tracks
-        if token.startswith("clean"):
-            current_group.append(token)
-            continue
-        else:
-            if current_group:
-                merged = merge_tracks_and_prune(current_group)
-                processed.extend(merged)
-                current_group = []
+    if not merge_track:
+        # only remain clean0
+        for token in tokens:
+            if token.startswith("clean"):
+                if token[5] == "0":
+                    processed.append(token.replace("clean0:", ""))
+                else:
+                    continue
+            else:
+                processed.append(token)
+    else:
+        current_group = []
+        for token in tokens:
+            # Group any 'clean' tracks
+            if token.startswith("clean"):
+                current_group.append(token)
+                continue
+            else:
+                if current_group:
+                    merged = merge_tracks_and_prune(current_group)
+                    processed.extend(merged)
+                    current_group = []
 
-            processed.append(token)
+                processed.append(token)
 
-    if current_group:
-        merged = merge_tracks_and_prune(current_group)
-        processed.extend(merged)
+        if current_group:
+            merged = merge_tracks_and_prune(current_group)
+            processed.extend(merged)
 
     return processed
 
 
 def process_tokens(
-    tokens: Union[str, List[str]]
+    tokens: Union[str, List[str]], merge_tracks: bool = True
 ) -> Dict[str, Union[List[str], List[bool], List[List[int]], List[List[List[int]]]]]:
     """
 
@@ -111,9 +122,10 @@ def process_tokens(
     if isinstance(tokens, str):
         with open(tokens, "r") as f:
             tokens = [line.strip() for line in f if line.strip()]
-    results["original"] = tokens
+    # results["original"] = tokens
     results["tuning"] = get_string_tunings(tokens)
     # step 1. merge tracks
+    results["tokens"] = tracks_check(tokens, merge_tracks)
 
     return results
 
