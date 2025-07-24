@@ -10,12 +10,12 @@ DATA_FOLDER_PATH = os.path.join(
 
 def test_strings_tokens():
     celtic_tuning = {
-        "s1": "D5",
-        "s2": "A4",
-        "s3": "G4",
-        "s4": "D4",
-        "s5": "A3",
-        "s6": "D3",
+        "s1": "D4",
+        "s2": "A3",
+        "s3": "G3",
+        "s4": "D3",
+        "s5": "A2",
+        "s6": "D2",
     }
     gp_path = os.path.join(DATA_FOLDER_PATH, "bensusan_pierre-dame_lombarde.gp5")
     song = gp.parse(gp_path)
