@@ -1,19 +1,34 @@
 import os
-import pprint
 from typing import List
 
 import guitarpro as gp
 import pytest
 from asdadagp.encoder import guitarpro2tokens
 from asdadagp.processor import get_string_tunings, tracks_check
-from transformers.utils import find_adapter_config_file
 
 DATA_FOLDER_PATH = os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "tests", "data"
 )
 
 
-def test_get_string_tunings():
+@pytest.fixture
+def celtic_tuning_gp_path():
+    return os.path.join(DATA_FOLDER_PATH, "bensusan_pierre-dame_lombarde.gp5")
+
+
+@pytest.fixture
+def multi_tracks_gp_path():
+    return os.path.join(DATA_FOLDER_PATH, "dyens-roland-la_bicyclette.gp4")
+
+
+@pytest.fixture
+def multi_track_tokens(multi_tracks_gp_path):
+    song = gp.parse(multi_tracks_gp_path)
+    tokens = guitarpro2tokens(song, "unknown", verbose=True, note_tuning=True)
+    return tokens
+
+
+def test_get_string_tunings(celtic_tuning_gp_path, multi_tracks_gp_path):
     def gp_file_tuning(
         gp_path: str,
         correct_tuning: List[str],
@@ -37,43 +52,39 @@ def test_get_string_tunings():
         "D3",
     ]
 
-    dyens_tyning = ["E5", "B4", "G4", "D4", "G3", "F3"]
+    dyens_tuning = ["E5", "B4", "G4", "D4", "G3", "F3"]
     gp_file_tuning(
-        os.path.join(DATA_FOLDER_PATH, "bensusan_pierre-dame_lombarde.gp5"),
+        celtic_tuning_gp_path,
         celtic_tunings,
         note_tuning=True,
     )
     gp_file_tuning(
-        os.path.join(DATA_FOLDER_PATH, "bensusan_pierre-dame_lombarde.gp5"),
+        celtic_tuning_gp_path,
         celtic_tunings,
         note_tuning=False,
     )
 
     gp_file_tuning(
-        os.path.join(DATA_FOLDER_PATH, "dyens-roland-la_bicyclette.gp4"),
-        dyens_tyning,
+        multi_tracks_gp_path,
+        dyens_tuning,
         note_tuning=True,
     )
     gp_file_tuning(
-        os.path.join(DATA_FOLDER_PATH, "dyens-roland-la_bicyclette.gp4"),
-        dyens_tyning,
+        multi_tracks_gp_path,
+        dyens_tuning,
         note_tuning=False,
     )
 
 
-def test_extra_track_clean():
-    gp_path = os.path.join(DATA_FOLDER_PATH, "dyens-roland-la_bicyclette.gp4")
-    song = gp.parse(gp_path)
-    tokens = guitarpro2tokens(song, "unknown", verbose=True, note_tuning=True)
-
-    # pprint.pprint(tokens[:10])
+def test_extra_track_merge(multi_track_tokens):
     sound_notes = [
-        token for token in tokens if token.startswith("clean") and "note" in token
+        token
+        for token in multi_track_tokens
+        if token.startswith("clean") and "note" in token
     ]
 
-    processed_tokens = tracks_check(tokens)
+    processed_tokens = tracks_check(multi_track_tokens)
     assert isinstance(processed_tokens, list)
-    # pprint.pprint(processed_tokens[:10])
     processed_sound_note = [
         token for token in processed_tokens if token.startswith("note")
     ]
@@ -81,3 +92,20 @@ def test_extra_track_clean():
     assert len(sound_notes) == len(
         processed_sound_note
     )  # Ensure no tokens are lost in processing
+
+
+def test_extra_tracks_removal(multi_track_tokens):
+    main_track = [token for token in multi_track_tokens if token.startswith("clean0")]
+    main_track_notes = [token for token in main_track if "note" in token]
+
+    processed_tokens = tracks_check(multi_track_tokens, False)
+    assert isinstance(processed_tokens, list)
+    processed_sound_note = [
+        token for token in processed_tokens if token.startswith("note")
+    ]
+
+    assert len(main_track_notes) == len(
+        processed_sound_note
+    )  # Ensure no tokens are lost in processing
+
+    assert len(main_track) == len(processed_sound_note) + processed_tokens.count("rest")
