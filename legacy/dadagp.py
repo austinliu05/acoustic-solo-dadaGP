@@ -15,143 +15,13 @@ from token_splitter import split_rare_token, unsplit_fx
 
 # Note: 
 # "clean" = Clean Electric Guitar or Acoustic Guitar
-# "distorted" = Distorted Guitar or Overdrive Guitar
-# "bass" = Any Bass Guitar
-# "leads" = Any other instrument more stacatto with sharp attacks (like Piano)
-# "pads" = Any other instrument used more ambiently (like Choir)
-# "remove" = Sound FX -- removing them for this dataset
-# "drums" ... Actually drums are determined by track.isPercussionTrack=True not track.channel.instrument. 
-# Drum tracks could have any instrument, usually 0 or 255.
 
-instrument_groups = {0: 'leads',
- 1: 'leads',
- 2: 'leads',
- 3: 'leads',
- 4: 'leads',
- 5: 'leads',
- 6: 'leads',
- 7: 'leads',
- 8: 'leads',
- 9: 'leads',
- 10: 'leads',
- 11: 'leads',
- 12: 'leads',
- 13: 'leads',
- 14: 'leads',
- 15: 'leads',
- 16: 'leads',
- 17: 'leads',
- 18: 'leads',
- 19: 'leads',
- 20: 'leads',
- 21: 'leads',
- 22: 'leads',
- 23: 'leads',
+instrument_groups = {
  24: 'clean',
  25: 'clean',
  26: 'clean',
  27: 'clean',
- 28: 'clean',
- 29: 'distorted', 
- 30: 'distorted',
- 31: 'distorted',
- 32: 'bass',
- 33: 'bass',
- 34: 'bass',
- 35: 'bass',
- 36: 'bass',
- 37: 'bass',
- 38: 'bass',
- 39: 'bass',
- 40: 'leads',
- 41: 'leads',
- 42: 'leads',
- 43: 'leads',
- 44: 'leads',
- 45: 'leads',
- 46: 'leads',
- 47: 'leads',
- 48: 'pads',
- 49: 'pads',
- 50: 'pads',
- 51: 'pads',
- 52: 'pads',
- 53: 'pads',
- 54: 'pads',
- 55: 'pads',
- 56: 'leads',
- 57: 'leads',
- 58: 'leads',
- 59: 'leads',
- 60: 'leads',
- 61: 'leads',
- 62: 'leads',
- 63: 'leads',
- 64: 'leads',
- 65: 'leads',
- 66: 'leads',
- 67: 'leads',
- 68: 'leads',
- 69: 'leads',
- 70: 'leads',
- 71: 'leads',
- 72: 'leads',
- 73: 'leads',
- 74: 'leads',
- 75: 'leads',
- 76: 'leads',
- 77: 'leads',
- 78: 'leads',
- 79: 'leads',
- 80: 'leads',
- 81: 'leads',
- 82: 'leads',
- 83: 'leads',
- 84: 'leads',
- 85: 'leads',
- 86: 'leads',
- 87: 'leads',
- 88: 'pads',
- 89: 'pads',
- 90: 'pads',
- 91: 'pads',
- 92: 'pads',
- 93: 'pads',
- 94: 'pads',
- 95: 'pads',
- 96: 'leads',
- 97: 'pads',
- 98: 'leads',
- 99: 'leads',
- 100: 'pads',
- 101: 'pads',
- 102: 'pads',
- 103: 'pads',
- 104: 'clean',
- 105: 'clean',
- 106: 'clean',
- 107: 'clean',
- 108: 'leads',
- 109: 'leads',
- 110: 'leads',
- 111: 'leads',
- 112: 'leads',
- 113: 'leads',
- 114: 'leads',
- 115: 'leads',
- 116: 'leads',
- 117: 'leads',
- 118: 'leads',
- 119: 'leads',
- 120: 'remove',
- 121: 'remove',
- 122: 'remove',
- 123: 'remove',
- 124: 'remove',
- 125: 'remove',
- 126: 'remove',
- 127: 'remove',
- 255: 'drums'}
+ 28: 'clean'}
 
 # Basically the same function as numpy.diff
 # Subtracts consecutive numbers
@@ -174,15 +44,12 @@ assert diff([69,64,60,55,50,45])==[-5, -4, -5, -5, -5]
 
 
 # Returns the instrument group (string) given the Track object
-# Throws error if track is not supported (no Banjo)
 def get_instrument_group(track):
-    assert not track.isBanjoTrack, "Banjo not supported"
-    if(track.isPercussionTrack):
-        return "drums"
-    else:
-        midinumber = track.channel.instrument
-        group_name = instrument_groups[midinumber]
-        return group_name
+    midinumber = track.channel.instrument
+    if midinumber not in instrument_groups:
+        print(f"Error: Unsupported instrument {midinumber}. Only clean guitar is allowed.")
+    return "clean"
+
 
 # TUNING FUNCTIONS
 
@@ -205,107 +72,14 @@ def strtodiff(strings):
     strdiff = list(diff(strnums))
     return strdiff
 
-# Supported Guitar tunings. Give it the output from strtodiff
-def is_g6standard(strdiff):
-    return strdiff == [-5, -4, -5, -5, -5]
-def is_g7standard(strdiff):
-    return strdiff == [-5, -4, -5, -5, -5, -5]
-def is_g6drop(strdiff):
-    return strdiff == [-5, -4, -5, -5, -7]
-def is_g7drop(strdiff):
-    return strdiff == [-5, -4, -5, -5, -7, -5]
-
 # Test if the set of strings is a supported guitar tuning. Give it a notename list
 def is_good_guitar_tuning(strings):
-    strnums = [noteNumber(s)[3] for s in strings]
-    strdiff = list(diff(strnums))
-    if(len(strings)==6):
-        return is_g6standard(strdiff) or is_g6drop(strdiff)
-    elif(len(strings)==7):
-        return is_g7standard(strdiff) or is_g7drop(strdiff)
-    else:
-        return False
-# Tests
-strings = ['E5', 'B4', 'G4', 'D4', 'A3', 'E3']
-assert is_good_guitar_tuning(strings)
-strings = ['E5', 'B4', 'G4', 'D4', 'A3', 'D3']
-assert is_good_guitar_tuning(strings)
-strings = ['D5', 'A4', 'F4', 'C4', 'G3', 'D3']
-assert is_good_guitar_tuning(strings)
-strings = ['D5', 'A4', 'F4', 'C4', 'G3', 'C3']
-assert is_good_guitar_tuning(strings)
-strings = ['E5', 'B4', 'G4', 'D4', 'A3', 'E3', "B2"]
-assert is_good_guitar_tuning(strings)
-strings = ['E5', 'B4', 'G4', 'D4', 'A3', 'D3', "A2"]
-assert is_good_guitar_tuning(strings)
-strings = ['D5', 'A4', 'F4', 'C4', 'G3', 'D3', "A2"]
-assert is_good_guitar_tuning(strings)
-strings = ['D5', 'A4', 'F4', 'C4', 'G3', 'C3', "G2"]
-assert is_good_guitar_tuning(strings)
+    return True # Allowing all tunings
 
-# Supported Guitar tunings. Give it the output from strtodiff
-def is_b4standard(strdiff):
-    return strdiff == [-5, -5, -5]
-def is_b5standard(strdiff):
-    return strdiff == [-5, -5, -5, -5]
-def is_b6standard(strdiff):
-    return strdiff == [-5, -5, -5, -5, -5]
-def is_b4drop(strdiff):
-    return strdiff == [-5, -5, -7]
-
-# Returns a string describing the tuning type
 def get_tuning_type(instrument_group, strings):
     strnums = [noteNumber(s)[3] for s in strings]
     strdiff = list(diff(strnums))
-    if(instrument_group=="bass"):
-        if is_b4standard(strdiff): 
-            return "b4_standard"
-        elif is_b5standard(strdiff): 
-            return "b5_standard"
-        elif is_b6standard(strdiff): 
-            return "b6_standard"
-        elif is_b4drop(strdiff): 
-            return "b4_drop"
-    else:
-        if is_g6standard(strdiff): 
-            return "g6_standard"
-        elif is_g7standard(strdiff): 
-            return "g7_standard"
-        elif is_g6drop(strdiff): 
-            return "g6_drop"
-        elif is_g7drop(strdiff): 
-            return "g7_drop"
-    print(instrument_group, strings)
-    raise Exception # unsupported        
-assert get_tuning_type("guitar",['E5', 'B4', 'G4', 'D4', 'A3', 'E3']) == "g6_standard"
-assert get_tuning_type("guitar",['E5', 'B4', 'G4', 'D4', 'A3', 'D3']) == "g6_drop"
-
-
-# Test if the set of strings is a supported bass tuning. Give it a notename list
-def is_good_bass_tuning(strings):
-    strnums = [noteNumber(s)[3] for s in strings]
-    strdiff = list(diff(strnums))
-    if(len(strings)==6):
-        return is_b6standard(strdiff)
-    elif(len(strings)==5):
-        return is_b5standard(strdiff)
-    elif(len(strings)==4):
-        return is_b4standard(strdiff) or is_b4drop(strdiff)
-    else:
-        return False
-# Tests
-strings = ['G2', 'D2', 'A1', 'E1']
-assert is_good_bass_tuning(strings)
-strings = ['G2', 'D2', 'A1', 'D1']
-assert is_good_bass_tuning(strings)
-strings = ['F2', 'C2', 'G1', 'D1']
-assert is_good_bass_tuning(strings)
-strings = ['F2', 'C2', 'G1', 'C1']
-assert is_good_bass_tuning(strings)
-strings = ['G2', 'D2', 'A1', 'E1', 'B0']
-assert is_good_bass_tuning(strings)
-strings = ['C3','G2', 'D2', 'A1', 'E1', 'B0']
-assert is_good_bass_tuning(strings)
+    return f"{instrument_group}_tuning_{strdiff}"  # Store as a dynamic string
 
 # how many steps did we downtune the guitar?
 # Note: dropD or dropAD does not count as downtuning in our representation
@@ -317,20 +91,6 @@ def guitar_downtunage(strings):
 assert guitar_downtunage(['E5', 'B4', 'G4', 'D4', 'A3', 'E3']) == 0
 assert guitar_downtunage(['E5', 'B4', 'G4', 'D4', 'A3', 'D3']) == 0
 assert guitar_downtunage(['D5', 'A4', 'F4', 'C4', 'G3', 'C3']) == -2
-
-# how many steps did we downtune the bass?
-# Note: dropD or dropAD does not count as downtuning in our representation
-# The extra low notes will be represented as frets -2 and -1 on an E-standard-like fretboard
-def bass_downtunage(strings):
-    strnums = [noteNumber(s)[3] for s in strings]
-    if(len(strings)==4 or len(strings)==5):
-        return strnums[0] - 31 - 12
-    elif(len(strings)==6):
-        return strnums[1] - 31 - 12 
-# Tests
-assert bass_downtunage(['G3', 'D3', 'A2', 'E2']) == 0
-assert bass_downtunage(['F3', 'C3', 'G2', 'D2']) == -2
-assert bass_downtunage(['C4', 'G3', 'D3', 'A2', 'E2', 'B1']) == 0
 
 # from filename, get the artist_name
 def get_artist(file):
@@ -697,21 +457,7 @@ def tokens_to_note_effect(note, nfx_tokens):
 # If there are multiple drums tracks, they will all return the same prefix "drums"
 # the same goes for leads and pads
 def get_instrument_token_prefix(track, tracks_by_group):
-    if(track in tracks_by_group["drums"]):
-        return "drums"
-    elif(track in tracks_by_group["bass"]):
-        return "bass"
-    elif(track in tracks_by_group["leads"]):
-        return "leads"
-    elif(track in tracks_by_group["pads"]):
-        return "pads"
-    elif(track in tracks_by_group["remove"]):
-        return "remove"
-    elif(track in tracks_by_group["distorted"]):
-        for i,test in enumerate(tracks_by_group["distorted"]):
-            if(track==test):
-                return "distorted%s" % i
-    elif(track in tracks_by_group["clean"]):
+    if(track in tracks_by_group["clean"]):
         for i,test in enumerate(tracks_by_group["clean"]):
             if(track==test):
                 return "clean%s" % i
@@ -753,28 +499,14 @@ def oops_theres_a_note_here(new_event, events_this_measure, verbose=False):
                     verbose and print(event,new_event)
                     return False
                 if(new_event["type"]=="note"):
-                    # I am trying to insert a note. 
-                    if(event["instrument_prefix"]=="drums"): 
-                        # Ignore drum strings for now.
-                        # With drums, fret == midinumber. 
-                        # But you can't have two drums of the same midinumber. 
-                        # HMM: I think you can only have 6 simultaneous drums max. 
-                        # That's okay. Just leave the extra drums if they exist.. deal with it when rebuilding GP file.
-                        if(event["fret"]==new_event["fret"]):
-                            # This drum is already being played
-                            verbose and print("This drum note is already being played. Ignore my note.")
-                            verbose and print(event,new_event)
-                            return False
+                    if(new_event["string"]==event["string"]):
+                        # There's already a note on this string. Ignore my note.
+                        verbose and print("There's already a note on this string. Ignore my note.")
+                        verbose and print(event,new_event)
+                        return False
                     else:
-                        # Melodic instruments can only have one note per string
-                        if(new_event["string"]==event["string"]):
-                            # There's already a note on this string. Ignore my note.
-                            verbose and print("There's already a note on this string. Ignore my note.")
-                            verbose and print(event,new_event)
-                            return False
-                        else:
-                            # Don't return true yet. There could still be a note on this string.
-                            pass
+                        # Don't return true yet. There could still be a note on this string.
+                        pass
             elif event["type"]=="rest":
                 # Found a rest 
                 if(new_event["type"]=="note"):
@@ -892,9 +624,6 @@ def get_fret(note, track, pitch_shift):
     string = note.string
     instrument_group = get_instrument_group(track)
     strings = [str(s) for s in track.strings] 
-    #print(instrument_group, strings)
-    if(instrument_group=="drums"):
-        return note.value # this is supposed to be equivalent to the midinote number of the drum hit
     tuning = get_tuning_type(instrument_group,strings)
     drop_shift = 0
     if instrument_group=="bass":
@@ -906,24 +635,8 @@ def get_fret(note, track, pitch_shift):
         if tuning=="g6_drop" or tuning=="g7_drop":
             if string==6 or string==7:
                 drop_shift = 2
-    # print(instrument_group, tuning, string, drop_shift)
-    # Okay finally 
-    # The (E-standardized) fret number is the GP note value, minus any drop tuning pitches, 
     return note.value + track.offset - drop_shift
 
-#note = song.tracks[0].measures[139].voices[0].beats[0].notes[0]
-#print(note)
-#get_fret(note, song.tracks[0], pitch_shift)
-
-
-
-# supported_times = [0]
-# for i in range(0,10000):
-#     try:
-#         y = gp.models.Duration.fromTime(i)
-#         supported_times.append(i)
-#     except:
-#         continue
 supported_times = [3, 5, 6, 9, 10, 12, 15, 18, 20, 24, 30, 36, 40, 45, 48, 60, 72, 80, 90, 96, 120, 144, 160, 180, 192, 240, 288, 320, 360, 384, 480, 576, 640, 720, 768, 960, 1152, 1280, 1440, 1536, 1920, 2304, 2560, 2880, 3072, 3840, 5760]
 
 # time duration may be an int or Fraction
@@ -952,6 +665,21 @@ assert convert_to_nearest_supported_time(480.1) == 480
 assert convert_to_nearest_supported_time(481) == 480
 assert convert_to_nearest_supported_time(920*1000) == 5760 ## if duration is too large, use the max supported duration
 
+def convert_spn_to_common(spn_tuning):
+    # Mapping of sharp to flat equivalents
+    sharp_to_flat = {
+        "A#": "Bb", "C#": "Db", "D#": "Eb",
+        "F#": "F#", "G#": "Ab"
+    }
+    
+    # Convert each note, remove octave numbers
+    common_tuning = []
+    for note in spn_tuning:
+        pitch = note[:-1]  # Remove octave number
+        converted = sharp_to_flat.get(pitch, pitch)
+        common_tuning.append(sharp_to_flat.get(pitch, pitch))  # Convert if needed
+    
+    return common_tuning
 
 # Takes a GP file, converts to token format
 def guitarpro2tokens(song, artist, verbose=False):
@@ -1049,15 +777,9 @@ def guitarpro2tokens(song, artist, verbose=False):
         if(group_name=="distorted" or group_name=="clean"):
             assert is_good_guitar_tuning(strings), "Error: Track %s has unsupported guitar tuning: %s" % (t," ".join(strings))
             downtunages.append(guitar_downtunage(strings))
-        elif(group_name=="bass"):
-            assert is_good_bass_tuning(strings), "Error: Track %s has unsupported bass tuning: %s" % (t," ".join(strings))
-            downtunages.append(bass_downtunage(strings))
-        elif(group_name=="pads" or group_name=="leads"):
-            assert is_good_guitar_tuning(strings), "Error: Track %s has unsupported pads/leads tuning: %s" % (t," ".join(strings))
-            downtunages.append(guitar_downtunage(strings))
         tuning_types[t] = get_tuning_type(group_name,strings)
 
-    verbose and print("Downtuning scheme of guitar/bass/pads/leads tracks:", downtunages)
+    verbose and print("Downtuning scheme:", downtunages)
     allthesame = all([x%12==downtunages[0]%12 for x in downtunages]) 
     # for example, (-3, -3, -3) are all the same downtune
     # also, (-3, -3, -15) is all the same downtune. That third instrument will end up changing octave to meet the others. 
@@ -1089,8 +811,16 @@ def guitarpro2tokens(song, artist, verbose=False):
 
     head_tokens = [artist, downtune_token, tempo_token, "start"]
     
+    tunings = ["Order of strings: (1,2,3,4,5,6)"]
+    
+    scientific_pitch_tuning = f"spn_tuning:{strings}"
+    tunings.append(scientific_pitch_tuning)
+        
+    common_tuning = f"tuning:{convert_spn_to_common(strings)}"
+    tunings.append(common_tuning)
+    
     verbose and print("=========\nHead tokens")
-    verbose and print(head_tokens)
+    verbose and print(f"{head_tokens}, \n{tunings}")
     
     ######################################################
     ## BUILD THE LIST OF EVENTS
@@ -1274,17 +1004,14 @@ def guitarpro2tokens(song, artist, verbose=False):
         if(e["type"]=="note" or e["type"]=="rest"):   
             effects = []
             if(e["type"]=="note"):
-                # note has effects. append them after the note
+                tuning_for_string = strings[e["string"] - 1]  # Assuming 1-based index                # note has effects. append them after the note
                 effects = e["effects"]
                 #del e["start"]
                 del e["effects"]
                 # append the NOTE  token
                 #w_events.append(e)
-                if(e["instrument_prefix"]=="drums"):
-                    # Ignore strings for drums. Rebuild the strings later. 
-                    body_tokens.append("drums:note:%s" % e["fret"])
-                else:
-                    body_tokens.append("%s:note:s%s:f%s" % (e["instrument_prefix"], e["string"], e["fret"]))
+                body_tokens.append(f"{e['instrument_prefix']}:note:s{e['string']}:f{e['fret']}:{tuning_for_string}")
+
                 if(len(effects)>0):
                     # append the NOTE EFFECTS
                     body_tokens.extend(effects)
@@ -1359,16 +1086,8 @@ def tokens2guitarpro(all_tokens, verbose=False):
     ## Check which instruments we got
 
     instrument_check = {
-        "distorted0": False,
-        "distorted1": False,
-        "distorted2": False,
         "clean0": False,
-        "clean1": False,
-        "bass": False,
-        "leads": False,    
-        "pads": False,
-        "drums": False,
-
+        "clean1": False
     }
     for token in body:
         tokensplit = token.split(":")
@@ -1379,14 +1098,8 @@ def tokens2guitarpro(all_tokens, verbose=False):
     verbose and print(instrument_check)
     
     instrument_stringinfo = {
-        "distorted0": False,
-        "distorted1": False,
-        "distorted2": False,
         "clean0": False,
         "clean1": False,
-        "bass": False,
-        "pads": False,
-        "leads": False
     }
 
     for instrument in instrument_stringinfo:
@@ -1683,16 +1396,7 @@ def tokens2guitarpro(all_tokens, verbose=False):
         new_track.channel.channel = i
         # im not sure about this, but seems to work ok
         new_track.channel.effectChannel = max(15,9+i) 
-        if(instrument=="drums"):
-            new_track.channel.instrument = 0
-            new_track.isPercussionTrack = True
-            new_track.color = gp.Color(r=100, g=100, b=250, a=1)
-            new_track.name = "Drums"
-        elif(instrument=="bass"):
-            new_track.channel.instrument = 34 # Electric Bass (pick) 
-            new_track.color = gp.Color(r=215, g=215, b=100, a=1)
-            new_track.name = "Bass"
-        elif(instrument=="clean0"):
+        if(instrument=="clean0"):
             new_track.channel.instrument = 27 # Electric Guitar (clean)
             new_track.color = gp.Color(r=255, g=150, b=100, a=1)
             new_track.name = "Clean Guitar"
@@ -1700,70 +1404,22 @@ def tokens2guitarpro(all_tokens, verbose=False):
             new_track.channel.instrument = 26 # Electric Guitar (jazz)
             new_track.color = gp.Color(r=255, g=180, b=100, a=1)
             new_track.name = "Clean Guitar 2"
-        elif(instrument=="distorted0"):
-            new_track.channel.instrument = 30 # Distortion Guitar
-            new_track.color = gp.Color(r=255, g=70, b=70, a=1)
-            new_track.name = "Guitar"
-        elif(instrument=="distorted1"):
-            new_track.channel.instrument = 30 # Distortion Guitar
-            new_track.color = gp.Color(r=255, g=100, b=100, a=1)
-            new_track.name = "Guitar 2"
-        elif(instrument=="distorted2"):
-            new_track.channel.instrument = 30 # Distortion Guitar
-            new_track.color = gp.Color(r=255, g=130, b=130, a=1)
-            new_track.name = "Guitar 3" 
-        elif(instrument=="leads"):
-            new_track.channel.instrument = 0 # Acoustic Grand Piano 
-            new_track.color = gp.Color(r=180, g=120, b=250, a=1)
-            new_track.name = "Piano"
-            #new_track.settings.autoLetRing = True # this would be aesthetically nice when combining tracks, if I could turn "Stringed" on as well, which might be >GP5
-        elif(instrument=="pads"):
-            new_track.channel.instrument = 48 # String Ensemble 1
-            new_track.color = gp.Color(r=120, g=230, b=120, a=1)
-            new_track.name = "Ensemble"
-            #new_track.settings.autoLetRing = True # this would be aesthetically nice when combining tracks, if I could turn "Stringed" on as well, which might be >GP5
         else:
             assert False, "Unsupported instrument"
         # Now set the strings
-        if(instrument=="drums"):
-            strings = ["C0","C0","C0","C0","C0","C0"]
-            new_track.strings = convert_strings_for_pygp(strings, 0) # drums are never "downtuned"
-        elif(instrument=="bass"):
-            drop = instrument_stringinfo[instrument]["drop_tuning"]
-            n_strings = instrument_stringinfo[instrument]["strings"]
-            if(n_strings==4):
-                if drop:
-                    strings = ['G3', 'D3', 'A2', 'D2']
-                else:
-                    strings = ['G3', 'D3', 'A2', 'E2']
-            elif(n_strings==5):
-                if drop:
-                    strings = ['G3', 'D3', 'A2', 'D2', 'A1']
-                else:
-                    strings = ['G3', 'D3', 'A2', 'E2', 'B1'] 
-                    # note: bass 5 string drop tuning isn't really supported, but here it is anyway
-            elif(n_strings==6):
-                if drop:
-                    strings = ['C4', 'G3', 'D3', 'A2', 'D2', 'A1']
-                else:
-                    strings = ['C4', 'G3', 'D3', 'A2', 'E2', 'B1']
-                    # note: bass 6 string drop tuning isn't really supported, but here it is anyway
-            new_track.strings = convert_strings_for_pygp(strings, pitch_shift) 
-        else:
-            # treat other instruments like guitars
-            drop = instrument_stringinfo[instrument]["drop_tuning"]
-            n_strings = instrument_stringinfo[instrument]["strings"]
-            if(n_strings==6):
-                if drop:
-                    strings = ['E5', 'B4', 'G4', 'D4', 'A3', 'D3']
-                else:
-                    strings = ['E5', 'B4', 'G4', 'D4', 'A3', 'E3']
-            elif(n_strings==7):
-                if drop:
-                    strings = ['E5', 'B4', 'G4', 'D4', 'A3', 'D3', 'A2']
-                else:
-                    strings = ['E5', 'B4', 'G4', 'D4', 'A3', 'E3', 'B2']
-            new_track.strings = convert_strings_for_pygp(strings, pitch_shift) 
+        drop = instrument_stringinfo[instrument]["drop_tuning"]
+        n_strings = instrument_stringinfo[instrument]["strings"]
+        if(n_strings==6):
+            if drop:
+                strings = ['E5', 'B4', 'G4', 'D4', 'A3', 'D3']
+            else:
+                strings = ['E5', 'B4', 'G4', 'D4', 'A3', 'E3']
+        elif(n_strings==7):
+            if drop:
+                strings = ['E5', 'B4', 'G4', 'D4', 'A3', 'D3', 'A2']
+            else:
+                strings = ['E5', 'B4', 'G4', 'D4', 'A3', 'E3', 'B2']
+        new_track.strings = convert_strings_for_pygp(strings, pitch_shift) 
 
         blankgp5.tracks.append(new_track)
         
@@ -1938,22 +1594,7 @@ def tokens2guitarpro(all_tokens, verbose=False):
                             # do nothing. at the end of the beat we'll figure out what type of beat it was (normal, rest)
                             continue
                         elif(note_info[1]=="note"):
-                            if(instrument=="drums"):
-                                # a drum note
-                                fret = int(note_info[2])
-                                # which string should it be?
-                                # I think you only get one drum note per string..
-                                # So put each note on its own string..
-                                # six max
-                                number_of_drum_notes_already = len(gp_beat.notes)
-                                if(number_of_drum_notes_already==6): 
-                                    # We've hit the limit of simultaneous drum notes
-                                    verbose and print("Skipped the drum note. Measure %s Beat %s Note %s" % (m, b, n))
-                                    continue
-                                else:
-                                    # note: strings are 1-indexed
-                                    string = number_of_drum_notes_already+1 
-                            else:
+                            if(instrument!="drums"):
                                 # a non-drum note
                                 string = int(note_info[2][1:]) # s4
                                 fret = int(note_info[3][1:]) # f0, f20, f-2, etc
