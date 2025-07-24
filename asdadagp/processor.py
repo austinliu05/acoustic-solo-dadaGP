@@ -127,6 +127,10 @@ def process_tokens(
     # step 1. merge tracks
     results["tokens"] = tracks_check(tokens, merge_tracks)
 
+    # step 2. split into measures
+    # consider the repeating with different "exit"
+    # use token index form ["tokens"]
+    # output: [[7, 8, 9, 10], [12, 13, 14], ... ]
     return results
 
 
