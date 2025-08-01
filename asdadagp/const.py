@@ -1,3 +1,5 @@
+PKG_NAME = "asdadagp"
+
 instrument_groups = {24: "clean", 25: "clean", 26: "clean", 27: "clean", 28: "clean"}
 
 
