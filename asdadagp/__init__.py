@@ -1,13 +1,9 @@
-"""
-acoustic-solo-dadaGP - A modification of DadaGP customized for acoustic solo guitar files.
+from logging import getLogger
 
-This package provides tools for processing Guitar Pro files, converting them to tokens,
-and back to Guitar Pro format, specifically designed for acoustic solo guitar music.
-"""
+from ._version import __version__
+from .const import PKG_NAME
 
-__version__ = "0.1.0"
-__author__ = "Austin Liu"
-__email__ = "austin_f_liu@brown.edu"
+_LOGGER = getLogger(PKG_NAME)
 
 # Main functions
 from .encoder import asdadagp_encode, guitarpro2tokens
@@ -21,6 +17,11 @@ from .utils import get_tuning_type, get_fret, convert_spn_to_common
 from .const import instrument_groups, supported_times, wait_token_list2
 
 __all__ = [
+    # Version and logging
+    "__version__",
+    "_LOGGER",
+    "PKG_NAME",
+    
     # Main functions
     "asdadagp_encode",
     "guitarpro2tokens", 
