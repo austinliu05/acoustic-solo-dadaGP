@@ -8,7 +8,7 @@ _LOGGER = getLogger(PKG_NAME)
 # Main functions
 from .encoder import asdadagp_encode, guitarpro2tokens
 from .decoder import asdadagp_decode, tokens2guitarpro
-from .process_tokens import process_raw_acoustic_solo_tokens
+from .processor import process_tokens, process_raw_acoustic_solo_tokens
 
 # Utility functions
 from .utils import get_tuning_type, get_fret, convert_spn_to_common
@@ -27,6 +27,7 @@ __all__ = [
     "guitarpro2tokens", 
     "asdadagp_decode",
     "tokens2guitarpro",
+    "process_tokens",
     "process_raw_acoustic_solo_tokens",
     
     # Utility functions

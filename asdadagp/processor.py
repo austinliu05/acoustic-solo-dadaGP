@@ -1,9 +1,160 @@
+"""
+Goal: raw tokens --> mergetracks
+
+"""
+
 import logging
-import os
 import re
 from typing import Dict, List, Tuple, Union
 
 _LOGGER = logging.getLogger(__name__)
+
+
+def get_string_tunings(tokens: List[str]) -> List[str]:
+    """
+    Extracts string tunings from the provided tokens.
+
+    :param tokens: List of tokens from which to extract string tunings.
+    :type tokens:
+    :return: tuning of the song / tab
+    :rtype:
+    """
+    if tokens[9] == "start":
+        note_tuning = False
+    elif tokens[3] == "start":
+        note_tuning = True
+    else:
+        note_tuning = True
+        _LOGGER.warning("'start' token not found in expected positions.")
+
+    if note_tuning:
+        string_tuning_dict = {}
+        while len(string_tuning_dict) < 6:
+            for token in tokens:
+                if token.startswith("clean") and "note" in token:
+                    start = token.index("note") + len("note")
+                    guitar_string = int(token[start + 2])
+                    tuning = token.split(":")[-1]
+                    string_tuning_dict[guitar_string] = tuning
+
+        return [string_tuning_dict[i] for i in range(1, 7)]
+    else:
+        return tokens[
+            3:9
+        ]  # Assuming the first 6 tokens after "start" are the string tunings
+
+
+def merge_tracks_and_prune(notes: List[str]) -> List[str]:
+
+    processed_notes = [re.sub(r"clean\d+:", "", token).strip() for token in notes]
+
+    # for token in notes:
+    #     # Remove any track prefix ("clean0:" or "clean1:" etc).
+    #     cleaned_token = re.sub(r"clean\d+:", "", token)
+    #     processed_notes.append(cleaned_token)
+
+    if set(processed_notes) == {"rest"}:
+        return ["rest"]
+    else:
+        return sort_notes([note for note in processed_notes if note != "rest"])
+
+
+def sort_notes(pruned_notes: List[str]) -> List[str]:
+    # Define a key function for sorting based on "s<number>:" in the token.
+    def extract_s_number(s):
+        match = re.search(r"s(\d+):", s)
+        # If not found, push token to the end.
+        return int(match.group(1)) if match else float("inf")
+
+    sorted_notes = sorted(pruned_notes, key=extract_s_number)
+    return sorted_notes
+
+
+def tracks_check(tokens: List[str], merge_track: bool = True) -> List[str]:
+    processed = []
+    if not merge_track:
+        # only remain clean0
+        for token in tokens:
+            if token.startswith("clean"):
+                if token[5] == "0":
+                    processed.append(token.replace("clean0:", ""))
+                else:
+                    continue
+            else:
+                processed.append(token)
+    else:
+        current_group = []
+        for token in tokens:
+            # Group any 'clean' tracks
+            if token.startswith("clean"):
+                current_group.append(token)
+                continue
+            else:
+                if current_group:
+                    merged = merge_tracks_and_prune(current_group)
+                    processed.extend(merged)
+                    current_group = []
+
+                processed.append(token)
+
+        if current_group:
+            merged = merge_tracks_and_prune(current_group)
+            processed.extend(merged)
+
+    return processed
+
+
+def process_tokens(
+    tokens: Union[str, List[str]], merge_tracks: bool = True
+) -> Dict[str, Union[List[str], List[bool], List[List[int]], List[List[List[int]]]]]:
+    """
+
+    :param tokens: output from .encoder.guitarpro2tokens
+    :type tokens: str (path to txt file) or list of tokens
+    :return: {
+        "tokens": [<tokens after track merge>],
+        "instrumental": [<bool indicate if token at that index is instrumental or not>],
+        ""
+    }
+    :rtype:
+    """
+    results = {}
+    if isinstance(tokens, str):
+        with open(tokens, "r") as f:
+            tokens = [line.strip() for line in f if line.strip()]
+    # results["original"] = tokens
+    results["tuning"] = get_string_tunings(tokens)
+    # step 1. merge tracks
+    results["tokens"] = tracks_check(tokens, merge_tracks)
+
+    # step 2. split into measures
+    # consider the repeating with different "exit"
+    # use token index form ["tokens"]
+    # output: [[7, 8, 9, 10], [12, 13, 14], ... ]
+    return results
+
+
+def process_raw_tokens(tokens: Union[str, List[str]]) -> Dict[str, Dict]:
+    """
+    Processes raw tokens from a file or a list of strings.
+    - Merges tracks and removes clean prefixes.
+    - Expands repeat measures.
+    """
+    if isinstance(tokens, str):
+        with open(tokens, "r") as f:
+            tokens = [line.strip() for line in f if line.strip()]
+
+    results = {}
+    # get string tunings
+    results["tuning"] = get_string_tunings(tokens)
+    # get original measures
+    raw_measures = []
+    current_measure = []
+    return results
+
+
+def raw_tokens_splits(tokens):
+    pass
 
 
 class GpSongTokensProcessor:
@@ -14,9 +165,8 @@ class GpSongTokensProcessor:
 
     def __init__(self, tokens: Union[str, List[str]]):
         """
-
-        Args:
-            tokens ():
+        :param tokens:
+        :type tokens:
         """
         if isinstance(tokens, str):
             with open(tokens, "r") as f:
@@ -29,35 +179,9 @@ class GpSongTokensProcessor:
             )
 
         self.get_string_tunings()
-
         self.measures = None
         self.beats = None
         self.string_tunings = None
-
-    def get_string_tunings(self):
-        if self.tokens[9] == "start":
-            self.note_tuning = False
-        elif self.tokens[3] == "start":
-            self.note_tuning = True
-        else:
-            self.note_tuning = True
-            _LOGGER.warning("'start' token not found in expected positions.")
-
-        if self.note_tuning:
-            string_tuning_dict = {}
-            while len(string_tuning_dict) < 6:
-                for token in self.tokens:
-                    if "note" in token:
-                        start = token.index("note") + len("note")
-                        guitar_string = int(token[start + 3])
-                        tuning = token.split(":")[-1]
-                        string_tuning_dict[guitar_string] = tuning
-
-            self.string_tunings = [string_tuning_dict[i] for i in range(1, 7)]
-        else:
-            self.string_tunings = self.tokens[
-                3:9
-            ]  # Assuming the first 6 tokens after "start" are the string tunings
 
     def split_measures(self):
         """
@@ -83,8 +207,6 @@ class GpSongTokensProcessor:
                 token_measures.append(current_measure_tokens)
                 id_measures.append(current_measure_token_ids)
                 current_measure_index += 1
-
-            # elif
 
 
 def is_instrumental(token: str) -> bool:
@@ -132,36 +254,6 @@ def restore_non_instrumental(
             i_pure += 1
 
     return reconstructed
-
-
-def sort_notes(pruned_notes: List[str]):
-    # Define a key function for sorting based on "s<number>:" in the token.
-    def extract_s_number(s):
-        match = re.search(r"s(\d+):", s)
-        # If not found, push token to the end.
-        return int(match.group(1)) if match else float("inf")
-
-    sorted_notes = sorted(pruned_notes, key=extract_s_number)
-    return sorted_notes
-
-
-def merge_tracks_and_prune(notes: List[str]):
-    processed_notes = []
-    has_rest = False
-
-    for token in notes:
-        # Remove any track prefix ("clean0:" or "clean1:" etc).
-        cleaned_token = re.sub(r"clean\d+:", "", token)
-
-        if cleaned_token == "rest":
-            # If we haven't already added a rest token for this group, add it.
-            if not has_rest:
-                processed_notes.append("rest")
-                has_rest = True
-        else:
-            processed_notes.append(cleaned_token)
-
-    return sort_notes(processed_notes)
 
 
 def expand_repeats(tokens: List[str]) -> List[str]:
@@ -243,7 +335,7 @@ def process_raw_acoustic_solo_tokens(tokens: Union[str, List[str]]):
     expanded_body = expand_repeats(body)
 
     # Process body tokens by grouping consecutive 'clean' tokens,
-    processed_body = []
+    processed = []
     current_group = []
 
     prefixes = ("note", "bfs", "nfx", "wait")
@@ -259,16 +351,16 @@ def process_raw_acoustic_solo_tokens(tokens: Union[str, List[str]]):
 
         if current_group:
             merged = merge_tracks_and_prune(current_group)
-            processed_body.extend(merged)
+            processed.extend(merged)
             current_group = []
 
-        processed_body.append(token)
+        processed.append(token)
 
     if current_group:
         merged = merge_tracks_and_prune(current_group)
-        processed_body.extend(merged)
+        processed.extend(merged)
 
-    return processed_body
+    return processed
 
 
 # def main():
