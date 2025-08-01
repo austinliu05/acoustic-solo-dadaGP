@@ -5,7 +5,7 @@ import math
 from fractions import Fraction
 import sys
 
-from .token_splitter import split_rare_token, unsplit_fx
+from token_splitter import split_rare_token, unsplit_fx
 
 # Note: 
 # "clean" = Clean Electric Guitar or Acoustic Guitar

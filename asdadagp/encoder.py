@@ -1,9 +1,10 @@
 import guitarpro as gp
 
+from .token_splitter import split_rare_token
+
 from .const import instrument_groups
-from .processing.token_splitter import split_rare_token
 from .utils import (
-    beat_effect_list,  # is_good_guitar_tuning,
+    beat_effect_list,
     convert_spn_to_common,
     get_fret,
     get_instrument_group,
