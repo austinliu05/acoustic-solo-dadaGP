@@ -2,7 +2,7 @@ import guitarpro
 import guitarpro as gp
 
 from .const import instrument_groups, supported_times
-from .processing.token_splitter import unsplit_fx
+from .token_splitter import unsplit_fx
 
 
 def diff(number_list):
