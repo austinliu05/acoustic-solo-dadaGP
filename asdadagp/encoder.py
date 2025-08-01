@@ -1,7 +1,7 @@
 import guitarpro as gp
 
 from .const import instrument_groups
-from .token_splitter import split_rare_token
+from .processing.token_splitter import split_rare_token
 from .utils import (
     beat_effect_list,  # is_good_guitar_tuning,
     convert_spn_to_common,
