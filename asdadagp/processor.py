@@ -5,9 +5,132 @@ Goal: raw tokens --> mergetracks
 
 import logging
 import re
+from dataclasses import dataclass
 from typing import Dict, List, Tuple, Union
 
+from matplotlib.style.core import available
+
 _LOGGER = logging.getLogger(__name__)
+
+
+class TokenMeasure:
+    tokens: List[str]
+    repeat_open: bool # whether a repeat starts from this measure
+    repeat_close: bool # whether a repeat ends at this measure
+    repeat_alternative: bool # whether a repeat alternative starts from this measure
+
+
+def repeat_related_measure_indices(
+    measures: List[TokenMeasure],
+) -> Tuple[List[int], List[int], List[int]]:
+    opens = []
+    closes = []
+    alternatives = []
+    for i in range(len(measures)):
+        m = measures[i]
+        if m.repeat_open:
+            opens.append(i)
+        if m.repeat_close:
+            closes.append(i)
+        if m.repeat_alternative:
+            alternatives.append(i)
+
+    return opens, closes, alternatives
+
+
+def measures_playing_order(measures: List[TokenMeasure]):
+
+    opens, closes, alternatives = repeat_related_measure_indices(measures)
+
+    if not opens:
+        result = list(range(len(measures)))
+    else:
+        result = []
+        current_measure = 0
+
+        if not alternatives:
+            if len(opens) != len(closes):
+                raise ValueError(
+                    f"Number of repeat opens ({len(opens)}) does not match number of repeat closes ({closes}) when there is no repeat alternatives"
+                )
+
+            for i in range(len(opens)):
+                # played previous non-repeating measures
+                result.extend(list(range(current_measure, opens[i])))
+                repeated_part = list(range(opens[i], closes[i] + 1))
+
+                # play repeat
+                result.extend(repeated_part)
+                result.extend(repeated_part)
+
+                current_measure = closes[i] + 1
+
+            result.extend(list(range(current_measure, len(measures))))
+        else:
+
+            for i in range(len(opens)):
+                current_open = opens[i]
+                # add unrepeated part
+                result.extend(list(range(current_measure, current_open)))
+                try:
+                    current_limit = opens[i + 1]
+                except IndexError:  # last repeat in the song
+                    current_limit = len(measures)
+
+                available_alt = [
+                    loc for loc in alternatives if current_open < loc < current_limit
+                ]
+
+                if not available_alt:  # current repeat doesn't have alternative
+                    available_cl = [
+                        loc for loc in closes if current_open <= loc < current_limit
+                    ] # supposed to only has 1
+                    if not available_cl:
+                        raise ValueError(
+                            f"The repeat at measure {current_open} missed a close; the problem may come from the gp file that was encoded into tokens"
+                        )
+                    repeated_part = list(range(current_measure, available_cl[0] + 1))
+
+                    result.extend(repeated_part)
+                    result.extend(repeated_part)
+
+                    current_measure = available_cl[0] + 1
+                else: # with alternative
+                    repeated_part = list(range(current_open, available_alt[0]))
+                    result.extend(repeated_part)
+                    # second alternative can be missing in some tabs
+                    if len(available_alt) == 1:
+                        available_cl = [
+                            loc for loc in closes if available_alt[0] <= loc < current_limit
+                        ]
+                        if not available_cl:
+                            raise ValueError(
+                                f"The repeat alternative at measure {current_open} missed a close; the problem may come from the gp file that was encoded into tokens"
+                            )
+
+                        alt = list(range(available_alt[0], available_cl[0] + 1))
+
+                        result.extend(alt)
+                        result.extend(repeated_part)
+
+                        current_measure = available_cl[0] + 1
+                    else:
+                        for j in range(len(available_alt)):
+                            current_alt = available_alt[j]
+
+                            try:
+                                # end before next alternative
+                                alt = list(range(current_alt, available_alt[j + 1]))
+                                result.extend(alt)
+                                result.extend(repeated_part)
+                            except IndexError:
+                                # the last alternative
+                                current_measure = current_alt
+
+
+
+
+
 
 
 def get_string_tunings(tokens: List[str]) -> List[str]:

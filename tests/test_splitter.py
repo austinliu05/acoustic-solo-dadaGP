@@ -1,14 +1,8 @@
-from asdadagp.token_splitter import (
-    split_bend_token,
-    split_grace_token,
-    split_rare_token,
-    split_trill_token,
-    split_wait_token,
-    unsplit_bend_fx,
-    unsplit_fx,
-    unsplit_grace_nfx,
-    unsplit_trill_nfx,
-)
+from asdadagp.token_splitter import (split_bend_token, split_grace_token,
+                                     split_rare_token, split_trill_token,
+                                     split_wait_token, unsplit_bend_fx,
+                                     unsplit_fx, unsplit_grace_nfx,
+                                     unsplit_trill_nfx)
 
 
 def test_wait_token():

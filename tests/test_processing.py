@@ -3,8 +3,10 @@ from typing import List
 
 import guitarpro as gp
 import pytest
+
 from asdadagp.encoder import guitarpro2tokens
-from asdadagp.processor import get_string_tunings, tracks_check
+from asdadagp.processor import (get_string_tunings, prelim_measures_split,
+                                tracks_check)
 
 DATA_FOLDER_PATH = os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "tests", "data"
@@ -109,3 +111,11 @@ def test_extra_tracks_removal(multi_track_tokens):
     )  # Ensure no tokens are lost in processing
 
     assert len(main_track) == len(processed_sound_note) + processed_tokens.count("rest")
+
+def test_measure_splits(multi_track_tokens):
+    processed_tokens = tracks_check(multi_track_tokens, False)
+    measures, indices = prelim_measures_split(processed_tokens)
+    assert len(measures) == len(indices) == 51
+    assert measures[1][0] == "note:s1:f3:E5"
+
+

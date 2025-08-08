@@ -1,14 +1,14 @@
 """Tests for the CLI functionality."""
 
 import os
-import tempfile
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 import pytest
 
-from asdadagp.cli import validate_file_path, main
+from asdadagp.cli import main, validate_file_path
 
 
 def test_validate_file_path():

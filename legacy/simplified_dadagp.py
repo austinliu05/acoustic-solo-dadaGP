@@ -1,10 +1,10 @@
-import os
-import guitarpro # Note: works only with PyGuitarPro version 0.6
-import guitarpro as gp
 import math
-from fractions import Fraction
+import os
 import sys
+from fractions import Fraction
 
+import guitarpro  # Note: works only with PyGuitarPro version 0.6
+import guitarpro as gp  # Note: works only with PyGuitarPro version 0.6
 from token_splitter import split_rare_token, unsplit_fx
 
 # Note: 

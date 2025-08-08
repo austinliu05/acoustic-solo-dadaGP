@@ -12,19 +12,19 @@ import sys
 from pathlib import Path
 from typing import Optional
 
-from .encoder import asdadagp_encode, guitarpro2tokens
 from .decoder import asdadagp_decode, tokens2guitarpro
-from .processor import process_tokens, process_raw_acoustic_solo_tokens
+from .encoder import asdadagp_encode, guitarpro2tokens
+from .processor import process_raw_acoustic_solo_tokens, process_tokens
 from .utils import get_tuning_type
 
 
 def validate_file_path(file_path: str, must_exist: bool = True) -> str:
     """Validate and return absolute file path."""
     path = Path(file_path).resolve()
-    
+
     if must_exist and not path.exists():
         raise FileNotFoundError(f"File not found: {file_path}")
-    
+
     return str(path)
 
 
@@ -33,18 +33,18 @@ def encode_command(args):
     try:
         input_file = validate_file_path(args.input_file)
         output_file = args.output_file
-        
+
         # Ensure output directory exists
         output_path = Path(output_file)
         output_path.parent.mkdir(parents=True, exist_ok=True)
-        
+
         print(f"Encoding {input_file} to {output_file}")
         print(f"Artist token: {args.artist}")
-        
+
         asdadagp_encode(input_file, output_file, args.artist)
-        
+
         print(f"Successfully encoded to {output_file}")
-        
+
     except Exception as e:
         print(f"Error during encoding: {e}", file=sys.stderr)
         sys.exit(1)
@@ -55,17 +55,17 @@ def decode_command(args):
     try:
         input_file = validate_file_path(args.input_file)
         output_file = args.output_file
-        
+
         # Ensure output directory exists
         output_path = Path(output_file)
         output_path.parent.mkdir(parents=True, exist_ok=True)
-        
+
         print(f"Decoding {input_file} to {output_file}")
-        
+
         asdadagp_decode(input_file, output_file)
-        
+
         print(f"Successfully decoded to {output_file}")
-        
+
     except Exception as e:
         print(f"Error during decoding: {e}", file=sys.stderr)
         sys.exit(1)
@@ -75,13 +75,13 @@ def process_command(args):
     """Process tokens with various options."""
     try:
         input_file = validate_file_path(args.input_file)
-        
+
         # Read tokens from file
-        with open(input_file, 'r') as f:
-            tokens = f.read().split('\n')
-        
+        with open(input_file, "r") as f:
+            tokens = f.read().split("\n")
+
         print(f"Processing tokens from {input_file}")
-        
+
         if args.merge_tracks:
             print("Merging tracks...")
             processed = process_tokens(tokens, merge_tracks=True)
@@ -91,29 +91,31 @@ def process_command(args):
         else:
             print("Processing tokens...")
             processed = process_tokens(tokens, merge_tracks=args.no_merge_tracks)
-        
+
         # Output results
         if args.output_file:
             output_file = args.output_file
             output_path = Path(output_file)
             output_path.parent.mkdir(parents=True, exist_ok=True)
-            
-            with open(output_file, 'w') as f:
+
+            with open(output_file, "w") as f:
                 if isinstance(processed, dict):
                     import json
+
                     json.dump(processed, f, indent=2)
                 else:
-                    f.write('\n'.join(processed))
-            
+                    f.write("\n".join(processed))
+
             print(f"Processed tokens saved to {output_file}")
         else:
             # Print to stdout
             if isinstance(processed, dict):
                 import json
+
                 print(json.dumps(processed, indent=2))
             else:
-                print('\n'.join(processed))
-        
+                print("\n".join(processed))
+
     except Exception as e:
         print(f"Error during processing: {e}", file=sys.stderr)
         sys.exit(1)
@@ -123,12 +125,13 @@ def info_command(args):
     """Display information about a Guitar Pro file or token file."""
     try:
         input_file = validate_file_path(args.input_file)
-        
-        if input_file.endswith(('.gp3', '.gp4', '.gp5', '.gpx')):
+
+        if input_file.endswith((".gp3", ".gp4", ".gp5", ".gpx")):
             # Guitar Pro file
             import guitarpro as gp
+
             song = gp.parse(input_file)
-            
+
             print(f"Guitar Pro File: {input_file}")
             print(f"Title: {song.title}")
             print(f"Artist: {song.artist}")
@@ -136,37 +139,37 @@ def info_command(args):
             print(f"Tracks: {len(song.tracks)}")
             print(f"Measures: {len(song.measureHeaders)}")
             print(f"Tempo: {song.tempo} BPM")
-            
+
             print("\nTracks:")
             for i, track in enumerate(song.tracks):
                 track_type = "Percussion" if track.isPercussionTrack else "Guitar"
                 print(f"  {i+1}. {track.name} ({track_type})")
-                if hasattr(track, 'strings') and track.strings:
+                if hasattr(track, "strings") and track.strings:
                     tunings = [str(string.value) for string in track.strings]
                     print(f"     Tuning: {', '.join(tunings)}")
-        
+
         else:
             # Token file
-            with open(input_file, 'r') as f:
-                tokens = f.read().split('\n')
-            
+            with open(input_file, "r") as f:
+                tokens = f.read().split("\n")
+
             print(f"Token File: {input_file}")
             print(f"Total tokens: {len(tokens)}")
-            
+
             if tokens:
                 print(f"Artist: {tokens[0] if tokens[0] else 'Unknown'}")
-                
+
                 # Count token types
                 token_types = {}
                 for token in tokens:
-                    if ':' in token:
-                        token_type = token.split(':')[0]
+                    if ":" in token:
+                        token_type = token.split(":")[0]
                         token_types[token_type] = token_types.get(token_type, 0) + 1
-                
+
                 print("\nToken types:")
                 for token_type, count in sorted(token_types.items()):
                     print(f"  {token_type}: {count}")
-        
+
     except Exception as e:
         print(f"Error getting file info: {e}", file=sys.stderr)
         sys.exit(1)
@@ -190,46 +193,64 @@ Examples:
   
   # Get information about a file
   asdadagp info input.gp5
-        """
+        """,
     )
-    
-    subparsers = parser.add_subparsers(dest='command', help='Available commands')
-    
+
+    subparsers = parser.add_subparsers(dest="command", help="Available commands")
+
     # Encode command
-    encode_parser = subparsers.add_parser('encode', help='Encode Guitar Pro file to tokens')
-    encode_parser.add_argument('input_file', help='Input Guitar Pro file (.gp3, .gp4, .gp5, .gpx)')
-    encode_parser.add_argument('output_file', help='Output token file')
-    encode_parser.add_argument('--artist', required=True, help='Artist name for the token file')
+    encode_parser = subparsers.add_parser(
+        "encode", help="Encode Guitar Pro file to tokens"
+    )
+    encode_parser.add_argument(
+        "input_file", help="Input Guitar Pro file (.gp3, .gp4, .gp5, .gpx)"
+    )
+    encode_parser.add_argument("output_file", help="Output token file")
+    encode_parser.add_argument(
+        "--artist", required=True, help="Artist name for the token file"
+    )
     encode_parser.set_defaults(func=encode_command)
-    
+
     # Decode command
-    decode_parser = subparsers.add_parser('decode', help='Decode tokens to Guitar Pro file')
-    decode_parser.add_argument('input_file', help='Input token file')
-    decode_parser.add_argument('output_file', help='Output Guitar Pro file')
+    decode_parser = subparsers.add_parser(
+        "decode", help="Decode tokens to Guitar Pro file"
+    )
+    decode_parser.add_argument("input_file", help="Input token file")
+    decode_parser.add_argument("output_file", help="Output Guitar Pro file")
     decode_parser.set_defaults(func=decode_command)
-    
+
     # Process command
-    process_parser = subparsers.add_parser('process', help='Process tokens with various options')
-    process_parser.add_argument('input_file', help='Input token file')
-    process_parser.add_argument('--output-file', '-o', help='Output file (default: stdout)')
-    process_parser.add_argument('--merge-tracks', action='store_true', help='Merge multiple tracks')
-    process_parser.add_argument('--no-merge-tracks', action='store_true', help='Keep tracks separate')
-    process_parser.add_argument('--acoustic-solo', action='store_true', help='Process as acoustic solo')
+    process_parser = subparsers.add_parser(
+        "process", help="Process tokens with various options"
+    )
+    process_parser.add_argument("input_file", help="Input token file")
+    process_parser.add_argument(
+        "--output-file", "-o", help="Output file (default: stdout)"
+    )
+    process_parser.add_argument(
+        "--merge-tracks", action="store_true", help="Merge multiple tracks"
+    )
+    process_parser.add_argument(
+        "--no-merge-tracks", action="store_true", help="Keep tracks separate"
+    )
+    process_parser.add_argument(
+        "--acoustic-solo", action="store_true", help="Process as acoustic solo"
+    )
     process_parser.set_defaults(func=process_command)
-    
+
     # Info command
-    info_parser = subparsers.add_parser('info', help='Display information about a file')
-    info_parser.add_argument('input_file', help='Input file (Guitar Pro or token file)')
+    info_parser = subparsers.add_parser("info", help="Display information about a file")
+    info_parser.add_argument("input_file", help="Input file (Guitar Pro or token file)")
     info_parser.set_defaults(func=info_command)
-    
+
     args = parser.parse_args()
-    
+
     if not args.command:
         parser.print_help()
         sys.exit(1)
-    
+
     args.func(args)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

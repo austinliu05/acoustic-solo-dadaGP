@@ -110,7 +110,7 @@ asdadagp info input.txt
 ### Python API
 
 ```python
-from asdadagp import asdadagp_encode, asdadagp_decode, process_tokens
+from asdadagp import asdadagp_decode, asdadagp_encode, process_tokens
 
 # Encode a Guitar Pro file
 asdadagp_encode("input.gp5", "output.txt", "Artist Name")

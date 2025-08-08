@@ -1,6 +1,7 @@
 import os
 
 import guitarpro as gp
+
 from asdadagp.encoder import guitarpro2tokens
 
 DATA_FOLDER_PATH = os.path.join(
