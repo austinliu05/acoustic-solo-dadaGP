@@ -1,23 +1,17 @@
-"""
-Goal: raw tokens --> mergetracks
-
-"""
-
 import logging
 import re
 from dataclasses import dataclass
 from typing import Dict, List, Tuple, Union
 
-from matplotlib.style.core import available
-
 _LOGGER = logging.getLogger(__name__)
 
 
+@dataclass
 class TokenMeasure:
     tokens: List[str]
-    repeat_open: bool # whether a repeat starts from this measure
-    repeat_close: bool # whether a repeat ends at this measure
-    repeat_alternative: bool # whether a repeat alternative starts from this measure
+    repeat_open: bool  # whether a repeat starts from this measure
+    repeat_close: bool  # whether a repeat ends at this measure
+    repeat_alternative: bool  # whether a repeat alternative starts from this measure
 
 
 def repeat_related_measure_indices(
@@ -38,7 +32,9 @@ def repeat_related_measure_indices(
     return opens, closes, alternatives
 
 
-def measures_playing_order(measures: List[TokenMeasure]):
+def measures_playing_order(
+    measures: List[TokenMeasure], tokens: bool = False
+) -> Union[List[int], List[List[str]]]:
 
     opens, closes, alternatives = repeat_related_measure_indices(measures)
 
@@ -84,24 +80,26 @@ def measures_playing_order(measures: List[TokenMeasure]):
                 if not available_alt:  # current repeat doesn't have alternative
                     available_cl = [
                         loc for loc in closes if current_open <= loc < current_limit
-                    ] # supposed to only has 1
+                    ]  # supposed to only has 1
                     if not available_cl:
                         raise ValueError(
                             f"The repeat at measure {current_open} missed a close; the problem may come from the gp file that was encoded into tokens"
                         )
-                    repeated_part = list(range(current_measure, available_cl[0] + 1))
+                    repeated_part = list(range(current_open, available_cl[0] + 1))
 
                     result.extend(repeated_part)
                     result.extend(repeated_part)
 
                     current_measure = available_cl[0] + 1
-                else: # with alternative
+                else:  # with alternative
                     repeated_part = list(range(current_open, available_alt[0]))
                     result.extend(repeated_part)
                     # second alternative can be missing in some tabs
                     if len(available_alt) == 1:
                         available_cl = [
-                            loc for loc in closes if available_alt[0] <= loc < current_limit
+                            loc
+                            for loc in closes
+                            if available_alt[0] <= loc < current_limit
                         ]
                         if not available_cl:
                             raise ValueError(
@@ -126,11 +124,60 @@ def measures_playing_order(measures: List[TokenMeasure]):
                             except IndexError:
                                 # the last alternative
                                 current_measure = current_alt
+            result.extend(list(range(current_measure, len(measures))))
+    if not tokens:
+        return result
+
+    else:
+        measure_tokens = []
+        for i in result:
+            measure_tokens.append(measures[i].tokens)
+        return measure_tokens
 
 
+def split_tokens_to_measures(tokens: List[str]) -> List[List[str]]:
+    result = []
+    current = []
+    for t in tokens:
+        if t == "new_measure":
+            if current:  # only append if current is not empty
+                result.append(current)
+                current = []
+        else:
+            current.append(t)
+
+    if current:
+        result.append(current)
+
+    return result
 
 
+def tokens_to_measures(tokens: List[str]) -> List[TokenMeasure]:
+    result = []
+    token_measures = split_tokens_to_measures(tokens)
+    for i, measure in enumerate(token_measures):
+        # The first is the header
+        if i == 0:
+            continue
 
+        measure_headers = [t for t in measure if t.startswith("measure:")]
+        mus_tokens = [t for t in measure if not t.startswith("measure:")]
+
+        repeat_open = False
+        repeat_close = False
+        repeat_alt = False
+
+        for header in measure_headers:
+            if header == "measure:repeat_open":
+                repeat_open = True
+            if header.startswith("measure:repeat_close"):
+                repeat_close = True
+            if header.startswith("measure:repeat_alternative"):
+                repeat_alt = True
+
+        result.append(TokenMeasure(mus_tokens, repeat_open, repeat_close, repeat_alt))
+
+    return result
 
 
 def get_string_tunings(tokens: List[str]) -> List[str]:
@@ -227,34 +274,34 @@ def tracks_check(tokens: List[str], merge_track: bool = True) -> List[str]:
     return processed
 
 
-def process_tokens(
-    tokens: Union[str, List[str]], merge_tracks: bool = True
-) -> Dict[str, Union[List[str], List[bool], List[List[int]], List[List[List[int]]]]]:
-    """
-
-    :param tokens: output from .encoder.guitarpro2tokens
-    :type tokens: str (path to txt file) or list of tokens
-    :return: {
-        "tokens": [<tokens after track merge>],
-        "instrumental": [<bool indicate if token at that index is instrumental or not>],
-        ""
-    }
-    :rtype:
-    """
-    results = {}
-    if isinstance(tokens, str):
-        with open(tokens, "r") as f:
-            tokens = [line.strip() for line in f if line.strip()]
-    # results["original"] = tokens
-    results["tuning"] = get_string_tunings(tokens)
-    # step 1. merge tracks
-    results["tokens"] = tracks_check(tokens, merge_tracks)
-
-    # step 2. split into measures
-    # consider the repeating with different "exit"
-    # use token index form ["tokens"]
-    # output: [[7, 8, 9, 10], [12, 13, 14], ... ]
-    return results
+# def process_tokens(
+#     tokens: Union[str, List[str]], merge_tracks: bool = True
+# ) -> Dict[str, Union[List[str], List[bool], List[List[int]], List[List[List[int]]]]]:
+#     """
+#
+#     :param tokens: output from .encoder.guitarpro2tokens
+#     :type tokens: str (path to txt file) or list of tokens
+#     :return: {
+#         "tokens": [<tokens after track merge>],
+#         "instrumental": [<bool indicate if token at that index is instrumental or not>],
+#         ""
+#     }
+#     :rtype:
+#     """
+#     results = {}
+#     if isinstance(tokens, str):
+#         with open(tokens, "r") as f:
+#             tokens = [line.strip() for line in f if line.strip()]
+#     # results["original"] = tokens
+#     results["tuning"] = get_string_tunings(tokens)
+#     # step 1. merge tracks
+#     results["tokens"] = tracks_check(tokens, merge_tracks)
+#
+#     # step 2. split into measures
+#     # consider the repeating with different "exit"
+#     # use token index form ["tokens"]
+#     # output: [[7, 8, 9, 10], [12, 13, 14], ... ]
+#     return results
 
 
 def process_raw_tokens(tokens: Union[str, List[str]]) -> Dict[str, Dict]:
@@ -274,62 +321,6 @@ def process_raw_tokens(tokens: Union[str, List[str]]) -> Dict[str, Dict]:
     raw_measures = []
     current_measure = []
     return results
-
-
-def raw_tokens_splits(tokens):
-    pass
-
-
-class GpSongTokensProcessor:
-    """
-    Note token pipeline:
-    1. merge tracks & remove clean prefixes
-    """
-
-    def __init__(self, tokens: Union[str, List[str]]):
-        """
-        :param tokens:
-        :type tokens:
-        """
-        if isinstance(tokens, str):
-            with open(tokens, "r") as f:
-                self.tokens = [line.strip() for line in f if line.strip()]
-        elif isinstance(tokens, list):
-            self.tokens = tokens
-        else:
-            raise ValueError(
-                "A path to token txt file or a list of tokens is required."
-            )
-
-        self.get_string_tunings()
-        self.measures = None
-        self.beats = None
-        self.string_tunings = None
-
-    def split_measures(self):
-        """
-        Extracts measures from the tokens.
-        """
-        token_measures = []
-        id_measures = []
-        current_measure_tokens = []
-        current_measure_token_ids = []
-        current_measure_index = 0
-        last_measure_index = 0
-        in_repeat = False
-        repeat_start_index = -1
-
-        for i, token in enumerate(self.tokens):
-            if token_measures == [] and current_measure_tokens == []:
-                if token != "new_measure":
-                    continue
-            if token == "measure:repeat_open":
-                in_repeat = True
-                repeat_start_index = current_measure_index
-            elif token == "new_measure":
-                token_measures.append(current_measure_tokens)
-                id_measures.append(current_measure_token_ids)
-                current_measure_index += 1
 
 
 def is_instrumental(token: str) -> bool:
