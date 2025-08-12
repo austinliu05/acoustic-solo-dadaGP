@@ -11,7 +11,7 @@ from .decoder import asdadagp_decode, tokens2guitarpro
 
 # Main functions
 from .encoder import asdadagp_encode, guitarpro2tokens
-from .processor import process_raw_acoustic_solo_tokens, process_tokens
+from .processor import process_raw_acoustic_solo_tokens
 
 # Utility functions
 from .utils import convert_spn_to_common, get_fret, get_tuning_type

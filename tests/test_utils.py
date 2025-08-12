@@ -2,10 +2,13 @@ import os
 from fractions import Fraction
 
 import guitarpro as gp
-
-from asdadagp.utils import (convert_strings_for_pygp,
-                            convert_to_nearest_supported_time, diff,
-                            guitar_downtunage, noteNumber)
+from asdadagp.utils import (
+    convert_strings_for_pygp,
+    convert_to_nearest_supported_time,
+    diff,
+    guitar_downtunage,
+    noteNumber,
+)
 
 DATA_FOLDER_PATH = os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "tests", "data"

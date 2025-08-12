@@ -154,6 +154,8 @@ def split_tokens_to_measures(tokens: List[str]) -> List[List[str]]:
 
 def tokens_to_measures(tokens: List[str]) -> List[TokenMeasure]:
     result = []
+    if tokens[-1] == "end":
+        tokens = tokens[:-1]
     token_measures = split_tokens_to_measures(tokens)
     for i, measure in enumerate(token_measures):
         # The first is the header
@@ -217,12 +219,6 @@ def get_string_tunings(tokens: List[str]) -> List[str]:
 def merge_tracks_and_prune(notes: List[str]) -> List[str]:
 
     processed_notes = [re.sub(r"clean\d+:", "", token).strip() for token in notes]
-
-    # for token in notes:
-    #     # Remove any track prefix ("clean0:" or "clean1:" etc).
-    #     cleaned_token = re.sub(r"clean\d+:", "", token)
-    #     processed_notes.append(cleaned_token)
-
     if set(processed_notes) == {"rest"}:
         return ["rest"]
     else:
@@ -274,34 +270,34 @@ def tracks_check(tokens: List[str], merge_track: bool = True) -> List[str]:
     return processed
 
 
-# def process_tokens(
-#     tokens: Union[str, List[str]], merge_tracks: bool = True
-# ) -> Dict[str, Union[List[str], List[bool], List[List[int]], List[List[List[int]]]]]:
-#     """
-#
-#     :param tokens: output from .encoder.guitarpro2tokens
-#     :type tokens: str (path to txt file) or list of tokens
-#     :return: {
-#         "tokens": [<tokens after track merge>],
-#         "instrumental": [<bool indicate if token at that index is instrumental or not>],
-#         ""
-#     }
-#     :rtype:
-#     """
-#     results = {}
-#     if isinstance(tokens, str):
-#         with open(tokens, "r") as f:
-#             tokens = [line.strip() for line in f if line.strip()]
-#     # results["original"] = tokens
-#     results["tuning"] = get_string_tunings(tokens)
-#     # step 1. merge tracks
-#     results["tokens"] = tracks_check(tokens, merge_tracks)
-#
-#     # step 2. split into measures
-#     # consider the repeating with different "exit"
-#     # use token index form ["tokens"]
-#     # output: [[7, 8, 9, 10], [12, 13, 14], ... ]
-#     return results
+def process_tokens(
+    tokens: Union[str, List[str]], merge_tracks: bool = True
+) -> Dict[str, Union[List[str], List[bool], List[List[int]], List[List[List[int]]]]]:
+    """
+
+    :param tokens: output from .encoder.guitarpro2tokens
+    :type tokens: str (path to txt file) or list of tokens
+    :return: {
+        "tokens": [<tokens after track merge>],
+        "instrumental": [<bool indicate if token at that index is instrumental or not>],
+        ""
+    }
+    :rtype:
+    """
+    results = {}
+    if isinstance(tokens, str):
+        with open(tokens, "r") as f:
+            tokens = [line.strip() for line in f if line.strip()]
+    # results["original"] = tokens
+    results["tuning"] = get_string_tunings(tokens)
+    # step 1. merge tracks
+    results["tokens"] = tracks_check(tokens, merge_tracks)
+
+    # step 2. split into measures
+    # consider the repeating with different "exit"
+    # use token index form ["tokens"]
+    # output: [[7, 8, 9, 10], [12, 13, 14], ... ]
+    return results
 
 
 def process_raw_tokens(tokens: Union[str, List[str]]) -> Dict[str, Dict]:
@@ -323,53 +319,55 @@ def process_raw_tokens(tokens: Union[str, List[str]]) -> Dict[str, Dict]:
     return results
 
 
-def is_instrumental(token: str) -> bool:
-    return token.startswith("note:")
-
-
-def strip_non_instrumental(tokens: List[str]) -> Tuple[List[str], Dict[int, str]]:
-    """
-    Returns:
-      - pure_tokens:    [ all tokens t where is_instrumental(t) is True ]
-      - removed_map:    { original_index: removed_token } for each token
-                        where is_instrumental(token) is False.
-    """
-    pure_tokens: List[str] = []
-    removed_map: Dict[int, str] = {}
-
-    for idx, tok in enumerate(tokens):
-        if is_instrumental(tok):
-            pure_tokens.append(tok)
-        else:
-            removed_map[idx] = tok
-    return pure_tokens, removed_map
-
-
-def restore_non_instrumental(
-    pure_tokens: List[str], removed_map: Dict[int, str]
-) -> List[str]:
-    """
-    Rebuilds a full token list.
-
-    - Places each removed_map[idx] at index `idx`.
-    - Fills the remaining None slots (in ascending index order) with the
-        items from pure_tokens, in order.
-    """
-    total_length = len(pure_tokens) + len(removed_map)
-    reconstructed = [None] * total_length
-
-    for idx, tok in removed_map.items():
-        reconstructed[idx] = tok
-
-    i_pure = 0
-    for i in range(total_length):
-        if reconstructed[i] is None:
-            reconstructed[i] = pure_tokens[i_pure]
-            i_pure += 1
-
-    return reconstructed
-
-
+#
+#
+# def is_instrumental(token: str) -> bool:
+#     return token.startswith("note:")
+#
+#
+# def strip_non_instrumental(tokens: List[str]) -> Tuple[List[str], Dict[int, str]]:
+#     """
+#     Returns:
+#       - pure_tokens:    [ all tokens t where is_instrumental(t) is True ]
+#       - removed_map:    { original_index: removed_token } for each token
+#                         where is_instrumental(token) is False.
+#     """
+#     pure_tokens: List[str] = []
+#     removed_map: Dict[int, str] = {}
+#
+#     for idx, tok in enumerate(tokens):
+#         if is_instrumental(tok):
+#             pure_tokens.append(tok)
+#         else:
+#             removed_map[idx] = tok
+#     return pure_tokens, removed_map
+#
+#
+# def restore_non_instrumental(
+#     pure_tokens: List[str], removed_map: Dict[int, str]
+# ) -> List[str]:
+#     """
+#     Rebuilds a full token list.
+#
+#     - Places each removed_map[idx] at index `idx`.
+#     - Fills the remaining None slots (in ascending index order) with the
+#         items from pure_tokens, in order.
+#     """
+#     total_length = len(pure_tokens) + len(removed_map)
+#     reconstructed = [None] * total_length
+#
+#     for idx, tok in removed_map.items():
+#         reconstructed[idx] = tok
+#
+#     i_pure = 0
+#     for i in range(total_length):
+#         if reconstructed[i] is None:
+#             reconstructed[i] = pure_tokens[i_pure]
+#             i_pure += 1
+#
+#     return reconstructed
+#
+#
 def expand_repeats(tokens: List[str]) -> List[str]:
     """
     Scan through tokens. Whenever "measure:repeat_open" is found, collect everything
@@ -412,6 +410,9 @@ def expand_repeats(tokens: List[str]) -> List[str]:
             i += 1
 
     return expanded
+
+
+#
 
 
 def process_raw_acoustic_solo_tokens(tokens: Union[str, List[str]]):
