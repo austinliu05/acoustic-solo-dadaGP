@@ -8,6 +8,10 @@ _LOGGER = logging.getLogger(__name__)
 
 @dataclass
 class TokenMeasure:
+    """
+    Represents the information stored in a measure.
+    """
+
     tokens: List[str]
     repeat_open: bool  # whether a repeat starts from this measure
     repeat_close: bool  # whether a repeat ends at this measure
@@ -17,6 +21,15 @@ class TokenMeasure:
 def repeat_related_measure_indices(
     measures: List[TokenMeasure],
 ) -> Tuple[List[int], List[int], List[int]]:
+    """
+    Returns the indices of measures that are related to repeats.
+
+    :param measures: list of measures in the tab
+    :return: a tuple of three lists:
+        - indices of measures that open a repeat,
+        - indices of measures that close a repeat,
+        - indices of measures that are alternatives in a repeat.
+    """
     opens = []
     closes = []
     alternatives = []
@@ -35,6 +48,15 @@ def repeat_related_measure_indices(
 def measures_playing_order(
     measures: List[TokenMeasure], tokens: bool = False
 ) -> Union[List[int], List[List[str]]]:
+    """
+    Returns the playing order of measures in a tab, considering repeats and alternatives.
+
+    :param measures: list of measures in the tab
+    :param tokens: return measure tokens instead of indices
+
+    :return: a list of indices of measures in the playing order,
+        or a list of lists of tokens if `tokens` is True.
+    """
 
     opens, closes, alternatives = repeat_related_measure_indices(measures)
 
@@ -136,6 +158,13 @@ def measures_playing_order(
 
 
 def split_tokens_to_measures(tokens: List[str]) -> List[List[str]]:
+    """
+    Splits a list of tokens into measures based on the "new_measure" token.
+
+    :param tokens: list of all tokens in the tab
+
+    :return: a list of measures, where each measure is a list of tokens.
+    """
     result = []
     current = []
     for t in tokens:
@@ -153,7 +182,16 @@ def split_tokens_to_measures(tokens: List[str]) -> List[List[str]]:
 
 
 def tokens_to_measures(tokens: List[str]) -> List[TokenMeasure]:
+    """
+    Converts a list of tokens into a list of TokenMeasure objects, each representing a measure.
+
+    :param tokens:
+    :type tokens:
+    :return:
+    :rtype:
+    """
     result = []
+    # the last token is "end"
     if tokens[-1] == "end":
         tokens = tokens[:-1]
     token_measures = split_tokens_to_measures(tokens)
@@ -187,9 +225,7 @@ def get_string_tunings(tokens: List[str]) -> List[str]:
     Extracts string tunings from the provided tokens.
 
     :param tokens: List of tokens from which to extract string tunings.
-    :type tokens:
     :return: tuning of the song / tab
-    :rtype:
     """
     if tokens[9] == "start":
         note_tuning = False
@@ -217,6 +253,12 @@ def get_string_tunings(tokens: List[str]) -> List[str]:
 
 
 def merge_tracks_and_prune(notes: List[str]) -> List[str]:
+    """
+    Merges multiple acoustic tracks, sort notes within a beat, and remove the "cleanX:" prefix from the notes.
+
+    :param notes: List of notes, each prefixed with "cleanX:" where X is the track number.
+    :return: notes without the "cleanX:" prefix
+    """
 
     processed_notes = [re.sub(r"clean\d+:", "", token).strip() for token in notes]
     if set(processed_notes) == {"rest"}:
@@ -226,6 +268,12 @@ def merge_tracks_and_prune(notes: List[str]) -> List[str]:
 
 
 def sort_notes(pruned_notes: List[str]) -> List[str]:
+    """
+    Sorts the notes within same beat based on the "s<number>:" prefix in each token.
+
+    :param pruned_notes: List of notes that have been pruned of the "cleanX:" prefix.
+    :return: List of notes sorted by the "s<number>:" prefix.
+    """
     # Define a key function for sorting based on "s<number>:" in the token.
     def extract_s_number(s):
         match = re.search(r"s(\d+):", s)
@@ -237,6 +285,13 @@ def sort_notes(pruned_notes: List[str]) -> List[str]:
 
 
 def tracks_check(tokens: List[str], merge_track: bool = True) -> List[str]:
+    """
+    Processes the tokens by merging tracks and removing the "clean0:" prefix from the notes.
+
+    :param tokens: List of tokens from the tab.
+    :param merge_track: If True, merge all tracks and remove the "cleanX:" prefix, otherwise, only remain "clean0:".
+    :return: List of processed tokens with "cleanX:" prefixes removed and tracks merged if specified.
+    """
     processed = []
     if not merge_track:
         # only remain clean0
@@ -319,55 +374,6 @@ def process_raw_tokens(tokens: Union[str, List[str]]) -> Dict[str, Dict]:
     return results
 
 
-#
-#
-# def is_instrumental(token: str) -> bool:
-#     return token.startswith("note:")
-#
-#
-# def strip_non_instrumental(tokens: List[str]) -> Tuple[List[str], Dict[int, str]]:
-#     """
-#     Returns:
-#       - pure_tokens:    [ all tokens t where is_instrumental(t) is True ]
-#       - removed_map:    { original_index: removed_token } for each token
-#                         where is_instrumental(token) is False.
-#     """
-#     pure_tokens: List[str] = []
-#     removed_map: Dict[int, str] = {}
-#
-#     for idx, tok in enumerate(tokens):
-#         if is_instrumental(tok):
-#             pure_tokens.append(tok)
-#         else:
-#             removed_map[idx] = tok
-#     return pure_tokens, removed_map
-#
-#
-# def restore_non_instrumental(
-#     pure_tokens: List[str], removed_map: Dict[int, str]
-# ) -> List[str]:
-#     """
-#     Rebuilds a full token list.
-#
-#     - Places each removed_map[idx] at index `idx`.
-#     - Fills the remaining None slots (in ascending index order) with the
-#         items from pure_tokens, in order.
-#     """
-#     total_length = len(pure_tokens) + len(removed_map)
-#     reconstructed = [None] * total_length
-#
-#     for idx, tok in removed_map.items():
-#         reconstructed[idx] = tok
-#
-#     i_pure = 0
-#     for i in range(total_length):
-#         if reconstructed[i] is None:
-#             reconstructed[i] = pure_tokens[i_pure]
-#             i_pure += 1
-#
-#     return reconstructed
-#
-#
 def expand_repeats(tokens: List[str]) -> List[str]:
     """
     Scan through tokens. Whenever "measure:repeat_open" is found, collect everything
@@ -410,9 +416,6 @@ def expand_repeats(tokens: List[str]) -> List[str]:
             i += 1
 
     return expanded
-
-
-#
 
 
 def process_raw_acoustic_solo_tokens(tokens: Union[str, List[str]]):
