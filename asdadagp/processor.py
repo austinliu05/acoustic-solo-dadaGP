@@ -69,7 +69,7 @@ def measures_playing_order(
         if not alternatives:
             if len(opens) != len(closes):
                 raise ValueError(
-                    f"Number of repeat opens ({len(opens)}) does not match number of repeat closes ({closes}) when there is no repeat alternatives"
+                    f"Number of repeat opens ({len(opens)}) does not match number of repeat closes ({len(closes)}) when there is no repeat alternatives"
                 )
 
             for i in range(len(opens)):
