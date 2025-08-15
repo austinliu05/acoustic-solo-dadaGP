@@ -188,7 +188,10 @@ def tokens_to_measures(tokens: List[str]) -> List[TokenMeasure]:
     :param tokens:
     :type tokens:
     :return:
-    :rtype:
+    :param tokens: List of strings representing musical tokens from a tab, including measure headers (e.g., "measure:repeat_open") and musical notation tokens. The last token may be "end".
+    :type tokens: List[str]
+    :return: List of TokenMeasure objects, each representing a measure.
+    :rtype: List[TokenMeasure]
     """
     result = []
     # the last token is "end"
