@@ -1,13 +1,226 @@
-"""
-Goal: raw tokens --> mergetracks
-
-"""
-
 import logging
 import re
+from dataclasses import dataclass
 from typing import Dict, List, Tuple, Union
 
 _LOGGER = logging.getLogger(__name__)
+
+
+@dataclass
+class TokenMeasure:
+    """
+    Represents the information stored in a measure.
+    """
+
+    tokens: List[str]
+    repeat_open: bool  # whether a repeat starts from this measure
+    repeat_close: bool  # whether a repeat ends at this measure
+    repeat_alternative: bool  # whether a repeat alternative starts from this measure
+
+
+def repeat_related_measure_indices(
+    measures: List[TokenMeasure],
+) -> Tuple[List[int], List[int], List[int]]:
+    """
+    Returns the indices of measures that are related to repeats.
+
+    :param measures: list of measures in the tab
+    :return: a tuple of three lists:
+        - indices of measures that open a repeat,
+        - indices of measures that close a repeat,
+        - indices of measures that are alternatives in a repeat.
+    """
+    opens = []
+    closes = []
+    alternatives = []
+    for i in range(len(measures)):
+        m = measures[i]
+        if m.repeat_open:
+            opens.append(i)
+        if m.repeat_close:
+            closes.append(i)
+        if m.repeat_alternative:
+            alternatives.append(i)
+
+    return opens, closes, alternatives
+
+
+def measures_playing_order(
+    measures: List[TokenMeasure], tokens: bool = False
+) -> Union[List[int], List[List[str]]]:
+    """
+    Returns the playing order of measures in a tab, considering repeats and alternatives.
+
+    :param measures: list of measures in the tab
+    :param tokens: return measure tokens instead of indices
+
+    :return: a list of indices of measures in the playing order,
+        or a list of lists of tokens if `tokens` is True.
+    """
+
+    opens, closes, alternatives = repeat_related_measure_indices(measures)
+
+    if not opens:
+        result = list(range(len(measures)))
+    else:
+        result = []
+        current_measure = 0
+
+        if not alternatives:
+            if len(opens) != len(closes):
+                raise ValueError(
+                    f"Number of repeat opens ({len(opens)}) does not match number of repeat closes ({len(closes)}) when there is no repeat alternatives"
+                )
+
+            for i in range(len(opens)):
+                # played previous non-repeating measures
+                result.extend(list(range(current_measure, opens[i])))
+                repeated_part = list(range(opens[i], closes[i] + 1))
+
+                # play repeat
+                result.extend(repeated_part)
+                result.extend(repeated_part)
+
+                current_measure = closes[i] + 1
+
+            result.extend(list(range(current_measure, len(measures))))
+        else:
+
+            for i in range(len(opens)):
+                current_open = opens[i]
+                # add unrepeated part
+                result.extend(list(range(current_measure, current_open)))
+                try:
+                    current_limit = opens[i + 1]
+                except IndexError:  # last repeat in the song
+                    current_limit = len(measures)
+
+                available_alt = [
+                    loc for loc in alternatives if current_open < loc < current_limit
+                ]
+
+                if not available_alt:  # current repeat doesn't have alternative
+                    available_cl = [
+                        loc for loc in closes if current_open <= loc < current_limit
+                    ]  # supposed to only has 1
+                    if not available_cl:
+                        raise ValueError(
+                            f"The repeat at measure {current_open} missed a close; the problem may come from the gp file that was encoded into tokens"
+                        )
+                    repeated_part = list(range(current_open, available_cl[0] + 1))
+
+                    result.extend(repeated_part)
+                    result.extend(repeated_part)
+
+                    current_measure = available_cl[0] + 1
+                else:  # with alternative
+                    repeated_part = list(range(current_open, available_alt[0]))
+                    result.extend(repeated_part)
+                    # second alternative can be missing in some tabs
+                    if len(available_alt) == 1:
+                        available_cl = [
+                            loc
+                            for loc in closes
+                            if available_alt[0] <= loc < current_limit
+                        ]
+                        if not available_cl:
+                            raise ValueError(
+                                f"The repeat alternative at measure {current_open} missed a close; the problem may come from the gp file that was encoded into tokens"
+                            )
+
+                        alt = list(range(available_alt[0], available_cl[0] + 1))
+
+                        result.extend(alt)
+                        result.extend(repeated_part)
+
+                        current_measure = available_cl[0] + 1
+                    else:
+                        for j in range(len(available_alt)):
+                            current_alt = available_alt[j]
+
+                            try:
+                                # end before next alternative
+                                alt = list(range(current_alt, available_alt[j + 1]))
+                                result.extend(alt)
+                                result.extend(repeated_part)
+                            except IndexError:
+                                # the last alternative
+                                current_measure = current_alt
+            result.extend(list(range(current_measure, len(measures))))
+    if not tokens:
+        return result
+
+    else:
+        measure_tokens = []
+        for i in result:
+            measure_tokens.append(measures[i].tokens)
+        return measure_tokens
+
+
+def split_tokens_to_measures(tokens: List[str]) -> List[List[str]]:
+    """
+    Splits a list of tokens into measures based on the "new_measure" token.
+
+    :param tokens: list of all tokens in the tab
+
+    :return: a list of measures, where each measure is a list of tokens.
+    """
+    result = []
+    current = []
+    for t in tokens:
+        if t == "new_measure":
+            if current:  # only append if current is not empty
+                result.append(current)
+                current = []
+        else:
+            current.append(t)
+
+    if current:
+        result.append(current)
+
+    return result
+
+
+def tokens_to_measures(tokens: List[str]) -> List[TokenMeasure]:
+    """
+    Converts a list of tokens into a list of TokenMeasure objects, each representing a measure.
+
+    :param tokens:
+    :type tokens:
+    :return:
+    :param tokens: List of strings representing musical tokens from a tab, including measure headers (e.g., "measure:repeat_open") and musical notation tokens. The last token may be "end".
+    :type tokens: List[str]
+    :return: List of TokenMeasure objects, each representing a measure.
+    :rtype: List[TokenMeasure]
+    """
+    result = []
+    # the last token is "end"
+    if tokens[-1] == "end":
+        tokens = tokens[:-1]
+    token_measures = split_tokens_to_measures(tokens)
+    for i, measure in enumerate(token_measures):
+        # The first is the header
+        if i == 0:
+            continue
+
+        measure_headers = [t for t in measure if t.startswith("measure:")]
+        mus_tokens = [t for t in measure if not t.startswith("measure:")]
+
+        repeat_open = False
+        repeat_close = False
+        repeat_alt = False
+
+        for header in measure_headers:
+            if header == "measure:repeat_open":
+                repeat_open = True
+            if header.startswith("measure:repeat_close"):
+                repeat_close = True
+            if header.startswith("measure:repeat_alternative"):
+                repeat_alt = True
+
+        result.append(TokenMeasure(mus_tokens, repeat_open, repeat_close, repeat_alt))
+
+    return result
 
 
 def get_string_tunings(tokens: List[str]) -> List[str]:
@@ -15,9 +228,7 @@ def get_string_tunings(tokens: List[str]) -> List[str]:
     Extracts string tunings from the provided tokens.
 
     :param tokens: List of tokens from which to extract string tunings.
-    :type tokens:
     :return: tuning of the song / tab
-    :rtype:
     """
     if tokens[9] == "start":
         note_tuning = False
@@ -45,14 +256,14 @@ def get_string_tunings(tokens: List[str]) -> List[str]:
 
 
 def merge_tracks_and_prune(notes: List[str]) -> List[str]:
+    """
+    Merges multiple acoustic tracks, sort notes within a beat, and remove the "cleanX:" prefix from the notes.
+
+    :param notes: List of notes, each prefixed with "cleanX:" where X is the track number.
+    :return: notes without the "cleanX:" prefix
+    """
 
     processed_notes = [re.sub(r"clean\d+:", "", token).strip() for token in notes]
-
-    # for token in notes:
-    #     # Remove any track prefix ("clean0:" or "clean1:" etc).
-    #     cleaned_token = re.sub(r"clean\d+:", "", token)
-    #     processed_notes.append(cleaned_token)
-
     if set(processed_notes) == {"rest"}:
         return ["rest"]
     else:
@@ -60,6 +271,12 @@ def merge_tracks_and_prune(notes: List[str]) -> List[str]:
 
 
 def sort_notes(pruned_notes: List[str]) -> List[str]:
+    """
+    Sorts the notes within same beat based on the "s<number>:" prefix in each token.
+
+    :param pruned_notes: List of notes that have been pruned of the "cleanX:" prefix.
+    :return: List of notes sorted by the "s<number>:" prefix.
+    """
     # Define a key function for sorting based on "s<number>:" in the token.
     def extract_s_number(s):
         match = re.search(r"s(\d+):", s)
@@ -71,6 +288,13 @@ def sort_notes(pruned_notes: List[str]) -> List[str]:
 
 
 def tracks_check(tokens: List[str], merge_track: bool = True) -> List[str]:
+    """
+    Processes the tokens by merging tracks and removing the "clean0:" prefix from the notes.
+
+    :param tokens: List of tokens from the tab.
+    :param merge_track: If True, merge all tracks and remove the "cleanX:" prefix, otherwise, only remain "clean0:".
+    :return: List of processed tokens with "cleanX:" prefixes removed and tracks merged if specified.
+    """
     processed = []
     if not merge_track:
         # only remain clean0
@@ -151,109 +375,6 @@ def process_raw_tokens(tokens: Union[str, List[str]]) -> Dict[str, Dict]:
     raw_measures = []
     current_measure = []
     return results
-
-
-def raw_tokens_splits(tokens):
-    pass
-
-
-class GpSongTokensProcessor:
-    """
-    Note token pipeline:
-    1. merge tracks & remove clean prefixes
-    """
-
-    def __init__(self, tokens: Union[str, List[str]]):
-        """
-        :param tokens:
-        :type tokens:
-        """
-        if isinstance(tokens, str):
-            with open(tokens, "r") as f:
-                self.tokens = [line.strip() for line in f if line.strip()]
-        elif isinstance(tokens, list):
-            self.tokens = tokens
-        else:
-            raise ValueError(
-                "A path to token txt file or a list of tokens is required."
-            )
-
-        self.get_string_tunings()
-        self.measures = None
-        self.beats = None
-        self.string_tunings = None
-
-    def split_measures(self):
-        """
-        Extracts measures from the tokens.
-        """
-        token_measures = []
-        id_measures = []
-        current_measure_tokens = []
-        current_measure_token_ids = []
-        current_measure_index = 0
-        last_measure_index = 0
-        in_repeat = False
-        repeat_start_index = -1
-
-        for i, token in enumerate(self.tokens):
-            if token_measures == [] and current_measure_tokens == []:
-                if token != "new_measure":
-                    continue
-            if token == "measure:repeat_open":
-                in_repeat = True
-                repeat_start_index = current_measure_index
-            elif token == "new_measure":
-                token_measures.append(current_measure_tokens)
-                id_measures.append(current_measure_token_ids)
-                current_measure_index += 1
-
-
-def is_instrumental(token: str) -> bool:
-    return token.startswith("note:")
-
-
-def strip_non_instrumental(tokens: List[str]) -> Tuple[List[str], Dict[int, str]]:
-    """
-    Returns:
-      - pure_tokens:    [ all tokens t where is_instrumental(t) is True ]
-      - removed_map:    { original_index: removed_token } for each token
-                        where is_instrumental(token) is False.
-    """
-    pure_tokens: List[str] = []
-    removed_map: Dict[int, str] = {}
-
-    for idx, tok in enumerate(tokens):
-        if is_instrumental(tok):
-            pure_tokens.append(tok)
-        else:
-            removed_map[idx] = tok
-    return pure_tokens, removed_map
-
-
-def restore_non_instrumental(
-    pure_tokens: List[str], removed_map: Dict[int, str]
-) -> List[str]:
-    """
-    Rebuilds a full token list.
-
-    - Places each removed_map[idx] at index `idx`.
-    - Fills the remaining None slots (in ascending index order) with the
-        items from pure_tokens, in order.
-    """
-    total_length = len(pure_tokens) + len(removed_map)
-    reconstructed = [None] * total_length
-
-    for idx, tok in removed_map.items():
-        reconstructed[idx] = tok
-
-    i_pure = 0
-    for i in range(total_length):
-        if reconstructed[i] is None:
-            reconstructed[i] = pure_tokens[i_pure]
-            i_pure += 1
-
-    return reconstructed
 
 
 def expand_repeats(tokens: List[str]) -> List[str]:
@@ -361,57 +482,3 @@ def process_raw_acoustic_solo_tokens(tokens: Union[str, List[str]]):
         processed.extend(merged)
 
     return processed
-
-
-# def main():
-#     examples_folder = "examples"
-#
-#     # Clean up any previously processed files
-#     for fname in os.listdir(examples_folder):
-#         if "processed" in fname:
-#             path = os.path.join(examples_folder, fname)
-#             if os.path.isfile(path):
-#                 os.remove(path)
-#
-#     if not os.path.isdir(examples_folder):
-#         print(f"The folder '{examples_folder}' does not exist.")
-#         return
-#
-#     for filename in os.listdir(examples_folder):
-#         if not filename.endswith(".txt"):
-#             continue
-#
-#         filepath = os.path.join(examples_folder, filename)
-#         if not os.path.isfile(filepath):
-#             continue
-#
-#         print(f"\nProcessing file: {filename}")
-#         try:
-#             # Get a “fully processed” list:
-#             processed_tokens: List[str] = process_raw_acoustic_solo_tokens(filepath)
-#
-#             # Strip out all non‐instrumental tokens
-#             pure_tokens, removed_map = strip_non_instrumental(processed_tokens)
-#             base_name, ext = os.path.splitext(filename)
-#             predicted_pure = pure_tokens.copy()
-#
-#             # Re‐insert the non‐instrumental tokens in exactly the same spots:
-#             reconstructed = restore_non_instrumental(predicted_pure, removed_map)
-#
-#             base_name, ext = os.path.splitext(filename)
-#             processed_filename = f"{base_name}_processed{ext}"
-#             with open(os.path.join(examples_folder, processed_filename), "w") as f_proc:
-#                 f_proc.write("\n".join(processed_tokens))
-#             print(f"  → Fully processed tokens saved to: {processed_filename}")
-#
-#             reconstructed_filename = f"{base_name}_reconstructed{ext}"
-#             with open(os.path.join(examples_folder, reconstructed_filename), "w") as f_recon:
-#                 f_recon.write("\n".join(reconstructed))
-#             print(f"  → Reconstructed tokens saved to: {reconstructed_filename}")
-#
-#         except Exception as e:
-#             print(f"An error occurred while processing {filename}: {e}")
-#
-#
-# if __name__ == "__main__":
-#     main()

@@ -1,16 +1,15 @@
 #!/usr/bin/python
 
-import os
-import json
-import guitarpro # Note: works only with PyGuitarPro version 0.6
-import guitarpro as gp
-from collections import Counter
-import re
 import json
 import math
-from fractions import Fraction
+import os
+import re
 import sys
+from collections import Counter
+from fractions import Fraction
 
+import guitarpro  # Note: works only with PyGuitarPro version 0.6
+import guitarpro as gp  # Note: works only with PyGuitarPro version 0.6
 from token_splitter import split_rare_token, unsplit_fx
 
 # Note: 

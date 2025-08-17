@@ -4,7 +4,14 @@ from typing import List
 import guitarpro as gp
 import pytest
 from asdadagp.encoder import guitarpro2tokens
-from asdadagp.processor import get_string_tunings, tracks_check
+from asdadagp.processor import (
+    get_string_tunings,
+    measures_playing_order,
+    repeat_related_measure_indices,
+    split_tokens_to_measures,
+    tokens_to_measures,
+    tracks_check,
+)
 
 DATA_FOLDER_PATH = os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "tests", "data"
@@ -24,6 +31,19 @@ def multi_tracks_gp_path():
 @pytest.fixture
 def multi_track_tokens(multi_tracks_gp_path):
     song = gp.parse(multi_tracks_gp_path)
+    tokens = guitarpro2tokens(song, "unknown", verbose=True, note_tuning=True)
+    return tokens
+
+
+@pytest.fixture
+def repeat_bars_gp_path():
+    # https://www.songsterr.com/a/wsa/leo-brouwer-un-dia-de-noviembre-classical-guitar-tab-s903099
+    return os.path.join(DATA_FOLDER_PATH, "brower-leo-un_dia_de_noviembre.gp4")
+
+
+@pytest.fixture
+def repeat_bars_tokens(repeat_bars_gp_path):
+    song = gp.parse(repeat_bars_gp_path)
     tokens = guitarpro2tokens(song, "unknown", verbose=True, note_tuning=True)
     return tokens
 
@@ -109,3 +129,43 @@ def test_extra_tracks_removal(multi_track_tokens):
     )  # Ensure no tokens are lost in processing
 
     assert len(main_track) == len(processed_sound_note) + processed_tokens.count("rest")
+
+
+def test_split_measures(repeat_bars_tokens):
+    # 77 bars + header
+    measure_tokens = split_tokens_to_measures(repeat_bars_tokens)
+    assert len(measure_tokens) == 78
+
+    processed_tokens = tracks_check(repeat_bars_tokens, True)
+    processed_measure_tokens = split_tokens_to_measures(processed_tokens)
+    assert len(processed_measure_tokens) == 78
+
+
+def test_measures(repeat_bars_tokens):
+    print(len(repeat_bars_tokens))
+    print(repeat_bars_tokens[-10:])
+
+    measures = tokens_to_measures(repeat_bars_tokens)
+    assert len(measures) == 77
+
+    all_instrumental_tokens = [t for measure in measures for t in measure.tokens]
+    assert len(all_instrumental_tokens) == 1129
+
+    opens, closes, alternatives = repeat_related_measure_indices(measures)
+    assert opens == [1, 9, 28]
+    assert closes == [8, 25, 49]
+    assert alternatives == [25, 26, 49, 50]
+
+    measure_play_order = measures_playing_order(measures)
+    assert len(measure_play_order) == 122
+
+    assert measure_play_order == [0] + list(range(1, 9)) + list(range(1, 9)) + list(
+        range(9, 26)
+    ) + list(range(9, 25)) + [26, 27] + list(range(28, 50)) + list(
+        range(28, 49)
+    ) + list(
+        range(50, 77)
+    )
+
+    play_order_tokens = measures_playing_order(measures, tokens=True)
+    assert len(play_order_tokens) == 122
