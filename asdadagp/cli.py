@@ -175,6 +175,47 @@ def info_command(args):
         sys.exit(1)
 
 
+def merge_tracks_command(args):
+    """Merge tracks in a token file."""
+    try:
+        input_file = validate_file_path(args.input_file)
+        output_file = args.output_file
+
+        # Ensure output directory exists
+        output_path = Path(output_file)
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+
+        print(f"Merging tracks in {input_file}")
+        print(f"Output: {output_file}")
+
+        # Read tokens from file
+        with open(input_file, "r") as f:
+            tokens = f.read().split("\n")
+
+        # Process tokens with track merging
+        try:
+            # Try the full process_tokens first
+            processed = process_tokens(tokens, merge_tracks=True)
+            merged_tokens = processed["tokens"]
+        except Exception as e:
+            # Fallback to just track merging if process_tokens fails
+            print(f"Warning: Full processing failed, using basic track merging: {e}")
+            from .processor import tracks_check
+            merged_tokens = tracks_check(tokens, merge_track=True)
+
+        # Write merged tokens to output file
+        with open(output_file, "w") as f:
+            f.write("\n".join(merged_tokens))
+
+        print(f"Successfully merged tracks to {output_file}")
+        print(f"Original tokens: {len(tokens)}")
+        print(f"Merged tokens: {len(processed['tokens'])}")
+
+    except Exception as e:
+        print(f"Error during track merging: {e}", file=sys.stderr)
+        sys.exit(1)
+
+
 def main():
     """Main CLI entry point."""
     parser = argparse.ArgumentParser(
@@ -190,6 +231,9 @@ Examples:
   
   # Process tokens with track merging
   asdadagp process input.txt --merge-tracks --output processed.txt
+  
+  # Merge tracks in a token file
+  asdadagp merge-tracks input.txt output.txt
   
   # Get information about a file
   asdadagp info input.gp5
@@ -242,6 +286,12 @@ Examples:
     info_parser = subparsers.add_parser("info", help="Display information about a file")
     info_parser.add_argument("input_file", help="Input file (Guitar Pro or token file)")
     info_parser.set_defaults(func=info_command)
+
+    # Merge tracks command
+    merge_tracks_parser = subparsers.add_parser("merge-tracks", help="Merge tracks in a token file")
+    merge_tracks_parser.add_argument("input_file", help="Input token file")
+    merge_tracks_parser.add_argument("output_file", help="Output token file")
+    merge_tracks_parser.set_defaults(func=merge_tracks_command)
 
     args = parser.parse_args()
 
