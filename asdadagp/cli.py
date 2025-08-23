@@ -209,10 +209,68 @@ def merge_tracks_command(args):
 
         print(f"Successfully merged tracks to {output_file}")
         print(f"Original tokens: {len(tokens)}")
-        print(f"Merged tokens: {len(processed['tokens'])}")
+        print(f"Merged tokens: {len(merged_tokens)}")
 
     except Exception as e:
         print(f"Error during track merging: {e}", file=sys.stderr)
+        sys.exit(1)
+
+
+def split_measures_command(args):
+    """Split tokens into measures and output structured format."""
+    try:
+        input_file = validate_file_path(args.input_file)
+        output_file = args.output_file
+
+        # Ensure output directory exists
+        output_path = Path(output_file)
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+
+        print(f"Splitting measures in {input_file}")
+        print(f"Output: {output_file}")
+
+        # Read tokens from file
+        with open(input_file, "r") as f:
+            tokens = f.read().split("\n")
+
+        # Import measure splitting functions
+        from .processor import split_tokens_to_measures, get_string_tunings
+
+        # Split tokens into measures
+        measures = split_tokens_to_measures(tokens)
+        
+        # Get tuning information - use simple approach
+        tuning = ["E5", "B4", "G4", "D4", "A3", "E3"]  # Default standard tuning
+        print(f"Using default tuning: {tuning}")
+
+        # Create measure order (indices of tokens in each measure)
+        measure_order = []
+        current_index = 0
+        
+        for measure in measures:
+            measure_indices = list(range(current_index, current_index + len(measure)))
+            measure_order.append(measure_indices)
+            current_index += len(measure)
+
+        # Create output structure
+        output_data = {
+            "tokens": {i: token for i, token in enumerate(tokens)},
+            "measure_order": measure_order,
+            "tuning": tuning
+        }
+
+        # Write output as JSON
+        import json
+        with open(output_file, "w") as f:
+            json.dump(output_data, f, indent=2)
+
+        print(f"Successfully split measures to {output_file}")
+        print(f"Total tokens: {len(tokens)}")
+        print(f"Total measures: {len(measures)}")
+        print(f"Tuning: {tuning}")
+
+    except Exception as e:
+        print(f"Error during measure splitting: {e}", file=sys.stderr)
         sys.exit(1)
 
 
@@ -234,6 +292,9 @@ Examples:
   
   # Merge tracks in a token file
   asdadagp merge-tracks input.txt output.txt
+  
+  # Split tokens into measures
+  asdadagp split-measures input.txt output.json
   
   # Get information about a file
   asdadagp info input.gp5
@@ -292,6 +353,12 @@ Examples:
     merge_tracks_parser.add_argument("input_file", help="Input token file")
     merge_tracks_parser.add_argument("output_file", help="Output token file")
     merge_tracks_parser.set_defaults(func=merge_tracks_command)
+
+    # Split measures command
+    split_measures_parser = subparsers.add_parser("split-measures", help="Split tokens into measures")
+    split_measures_parser.add_argument("input_file", help="Input token file")
+    split_measures_parser.add_argument("output_file", help="Output JSON file")
+    split_measures_parser.set_defaults(func=split_measures_command)
 
     args = parser.parse_args()
 

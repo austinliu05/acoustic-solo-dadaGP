@@ -95,6 +95,32 @@ asdadagp process input.txt --acoustic-solo --output processed.txt
 asdadagp process input.txt --no-merge-tracks --output processed.txt
 ```
 
+#### Merge Tracks
+
+```bash
+# Merge multiple tracks into a single representation
+asdadagp merge-tracks input.txt output.txt
+```
+
+**What it does:**
+- Removes `cleanX:` prefixes from tokens (e.g., `clean0:note:s6:f0:D3` → `note:s6:f0:D3`)
+- Combines multiple guitar tracks into a unified tab
+- Preserves all musical content (notes, effects, timing)
+
+#### Split Measures
+
+```bash
+# Split tokens into measures with structured output
+asdadagp split-measures input.txt output.json
+```
+
+**What it does:**
+- Splits tokens by `new_measure` boundaries
+- Outputs structured JSON with:
+  - `tokens`: Indexed mapping of all tokens
+  - `measure_order`: Lists of token indices for each measure
+  - `tuning`: Guitar string tuning information
+
 #### Get File Information
 
 ```bash
@@ -131,6 +157,8 @@ processed = process_tokens(tokens, merge_tracks=True)
 - **`encode`**: Convert Guitar Pro files to token format
 - **`decode`**: Convert tokens back to Guitar Pro files
 - **`process`**: Process tokens with various options
+- **`merge-tracks`**: Merge multiple tracks in a token file
+- **`split-measures`**: Split tokens into measures with structured output
 - **`info`**: Display information about files
 
 ### Examples
@@ -144,6 +172,12 @@ asdadagp decode tokens.txt output.gp5
 
 # Process tokens and save to file
 asdadagp process tokens.txt --merge-tracks --output processed.txt
+
+# Merge multiple tracks in a token file
+asdadagp merge-tracks input.txt output.txt
+
+# Split tokens into measures with structured output
+asdadagp split-measures input.txt output.json
 
 # Get detailed file information
 asdadagp info song.gp5
@@ -166,6 +200,12 @@ Process tokens with optional track merging.
 
 #### `process_raw_acoustic_solo_tokens(tokens)`
 Process tokens specifically for acoustic solo guitar.
+
+#### `split_tokens_to_measures(tokens)`
+Split a list of tokens into measures based on "new_measure" tokens.
+
+#### `tokens_to_measures(tokens)`
+Convert tokens to structured TokenMeasure objects with repeat information.
 
 
 
