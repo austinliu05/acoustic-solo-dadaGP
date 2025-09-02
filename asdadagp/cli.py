@@ -234,10 +234,18 @@ def split_measures_command(args):
             tokens = f.read().split("\n")
 
         # Import measure splitting functions
-        from .processor import split_tokens_to_measures, get_string_tunings
+        from .processor import tokens_to_measures, measures_playing_order, get_string_tunings
 
-        # Split tokens into measures
-        measures = split_tokens_to_measures(tokens)
+        # Convert tokens to TokenMeasure objects with repeat analysis
+        token_measures = tokens_to_measures(tokens)
+        
+        # Get the actual playing order considering repeats and alternatives
+        playing_order = measures_playing_order(token_measures)
+        
+        # Get the expanded measures in playing order
+        expanded_measures = []
+        for measure_idx in playing_order:
+            expanded_measures.append(token_measures[measure_idx].tokens)
         
         # Get tuning information - use simple approach
         tuning = ["E5", "B4", "G4", "D4", "A3", "E3"]  # Default standard tuning
@@ -247,7 +255,7 @@ def split_measures_command(args):
         measure_order = []
         current_index = 0
         
-        for measure in measures:
+        for measure in expanded_measures:
             measure_indices = list(range(current_index, current_index + len(measure)))
             measure_order.append(measure_indices)
             current_index += len(measure)
@@ -266,7 +274,8 @@ def split_measures_command(args):
 
         print(f"Successfully split measures to {output_file}")
         print(f"Total tokens: {len(tokens)}")
-        print(f"Total measures: {len(measures)}")
+        print(f"Original measures: {len(token_measures)}")
+        print(f"Expanded measures (with repeats): {len(expanded_measures)}")
         print(f"Tuning: {tuning}")
 
     except Exception as e:

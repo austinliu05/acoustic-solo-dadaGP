@@ -133,23 +133,6 @@ asdadagp info input.txt
 
 
 
-### Python API
-
-```python
-from asdadagp import asdadagp_decode, asdadagp_encode, process_tokens
-
-# Encode a Guitar Pro file
-asdadagp_encode("input.gp5", "output.txt", "Artist Name")
-
-# Decode tokens back to Guitar Pro
-asdadagp_decode("input.txt", "output.gp5")
-
-# Process tokens
-processed = process_tokens(tokens, merge_tracks=True)
-```
-
----
-
 ## Command Line Interface
 
 ### Available Commands
@@ -183,44 +166,7 @@ asdadagp split-measures input.txt output.json
 asdadagp info song.gp5
 ```
 
----
 
-## API Reference
-
-### Main Functions
-
-#### `asdadagp_encode(input_file, output_file, artist_token)`
-Convert a Guitar Pro file to token format.
-
-#### `asdadagp_decode(input_file, output_file)`
-Convert tokens back to a Guitar Pro file.
-
-#### `process_tokens(tokens, merge_tracks=True)`
-Process tokens with optional track merging.
-
-#### `process_raw_acoustic_solo_tokens(tokens)`
-Process tokens specifically for acoustic solo guitar.
-
-#### `split_tokens_to_measures(tokens)`
-Split a list of tokens into measures based on "new_measure" tokens.
-
-#### `tokens_to_measures(tokens)`
-Convert tokens to structured TokenMeasure objects with repeat information.
-
-
-
-### Utility Functions
-
-#### `get_tuning_type(tuning)`
-Get the type of guitar tuning.
-
-#### `get_fret(note, tuning)`
-Get fret position for a note in a given tuning.
-
-#### `convert_spn_to_common(note)`
-Convert Scientific Pitch Notation to common notation.
-
----
 
 ## Contributing
 
