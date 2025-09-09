@@ -85,7 +85,7 @@ asdadagp decode input.txt output.gp5
 #### Process Tokens
 
 ```bash
-# Process with track merging
+# Process with track merging (keep only first track)
 asdadagp process input.txt --merge-tracks --output processed.txt
 
 # Process as acoustic solo
@@ -95,16 +95,9 @@ asdadagp process input.txt --acoustic-solo --output processed.txt
 asdadagp process input.txt --no-merge-tracks --output processed.txt
 ```
 
-#### Merge Tracks
-
-```bash
-# Merge multiple tracks into a single representation
-asdadagp merge-tracks input.txt output.txt
-```
-
-**What it does:**
+**Track Merging (`--merge-tracks`):**
 - Removes `cleanX:` prefixes from tokens (e.g., `clean0:note:s6:f0:D3` → `note:s6:f0:D3`)
-- Combines multiple guitar tracks into a unified tab
+- Keeps only the first guitar track (clean0) and discards additional tracks
 - Preserves all musical content (notes, effects, timing)
 
 #### Split Measures
@@ -139,8 +132,7 @@ asdadagp info input.txt
 
 - **`encode`**: Convert Guitar Pro files to token format
 - **`decode`**: Convert tokens back to Guitar Pro files
-- **`process`**: Process tokens with various options
-- **`merge-tracks`**: Merge multiple tracks in a token file
+- **`process`**: Process tokens with various options (including track merging)
 - **`split-measures`**: Split tokens into measures with structured output
 - **`info`**: Display information about files
 
@@ -155,9 +147,6 @@ asdadagp decode tokens.txt output.gp5
 
 # Process tokens and save to file
 asdadagp process tokens.txt --merge-tracks --output processed.txt
-
-# Merge multiple tracks in a token file
-asdadagp merge-tracks input.txt output.txt
 
 # Split tokens into measures with structured output
 asdadagp split-measures input.txt output.json

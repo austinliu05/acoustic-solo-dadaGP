@@ -327,56 +327,6 @@ def tracks_check(tokens: List[str], merge_track: bool = True) -> List[str]:
 
     return processed
 
-
-def process_tokens(
-    tokens: Union[str, List[str]], merge_tracks: bool = True
-) -> Dict[str, Union[List[str], List[bool], List[List[int]], List[List[List[int]]]]]:
-    """
-
-    :param tokens: output from .encoder.guitarpro2tokens
-    :type tokens: str (path to txt file) or list of tokens
-    :return: {
-        "tokens": [<tokens after track merge>],
-        "instrumental": [<bool indicate if token at that index is instrumental or not>],
-        ""
-    }
-    :rtype:
-    """
-    results = {}
-    if isinstance(tokens, str):
-        with open(tokens, "r") as f:
-            tokens = [line.strip() for line in f if line.strip()]
-    # results["original"] = tokens
-    results["tuning"] = get_string_tunings(tokens)
-    # step 1. merge tracks
-    results["tokens"] = tracks_check(tokens, merge_tracks)
-
-    # step 2. split into measures
-    # consider the repeating with different "exit"
-    # use token index form ["tokens"]
-    # output: [[7, 8, 9, 10], [12, 13, 14], ... ]
-    return results
-
-
-def process_raw_tokens(tokens: Union[str, List[str]]) -> Dict[str, Dict]:
-    """
-    Processes raw tokens from a file or a list of strings.
-    - Merges tracks and removes clean prefixes.
-    - Expands repeat measures.
-    """
-    if isinstance(tokens, str):
-        with open(tokens, "r") as f:
-            tokens = [line.strip() for line in f if line.strip()]
-
-    results = {}
-    # get string tunings
-    results["tuning"] = get_string_tunings(tokens)
-    # get original measures
-    raw_measures = []
-    current_measure = []
-    return results
-
-
 def expand_repeats(tokens: List[str]) -> List[str]:
     """
     Scan through tokens. Whenever "measure:repeat_open" is found, collect everything
