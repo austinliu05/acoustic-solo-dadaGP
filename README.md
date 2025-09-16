@@ -85,7 +85,7 @@ asdadagp decode input.txt output.gp5
 #### Process Tokens
 
 ```bash
-# Process with track merging
+# Process with track merging (keep only first track)
 asdadagp process input.txt --merge-tracks --output processed.txt
 
 # Process as acoustic solo
@@ -94,6 +94,25 @@ asdadagp process input.txt --acoustic-solo --output processed.txt
 # Keep tracks separate
 asdadagp process input.txt --no-merge-tracks --output processed.txt
 ```
+
+**Track Merging (`--merge-tracks`):**
+- Removes `cleanX:` prefixes from tokens (e.g., `clean0:note:s6:f0:D3` → `note:s6:f0:D3`)
+- Keeps only the first guitar track (clean0) and discards additional tracks
+- Preserves all musical content (notes, effects, timing)
+
+#### Split Measures
+
+```bash
+# Split tokens into measures with structured output
+asdadagp split-measures input.txt output.json
+```
+
+**What it does:**
+- Splits tokens by `new_measure` boundaries
+- Outputs structured JSON with:
+  - `tokens`: Indexed mapping of all tokens
+  - `measure_order`: Lists of token indices for each measure
+  - `tuning`: Guitar string tuning information
 
 #### Get File Information
 
@@ -107,30 +126,14 @@ asdadagp info input.txt
 
 
 
-### Python API
-
-```python
-from asdadagp import asdadagp_decode, asdadagp_encode, process_tokens
-
-# Encode a Guitar Pro file
-asdadagp_encode("input.gp5", "output.txt", "Artist Name")
-
-# Decode tokens back to Guitar Pro
-asdadagp_decode("input.txt", "output.gp5")
-
-# Process tokens
-processed = process_tokens(tokens, merge_tracks=True)
-```
-
----
-
 ## Command Line Interface
 
 ### Available Commands
 
 - **`encode`**: Convert Guitar Pro files to token format
 - **`decode`**: Convert tokens back to Guitar Pro files
-- **`process`**: Process tokens with various options
+- **`process`**: Process tokens with various options (including track merging)
+- **`split-measures`**: Split tokens into measures with structured output
 - **`info`**: Display information about files
 
 ### Examples
@@ -145,42 +148,14 @@ asdadagp decode tokens.txt output.gp5
 # Process tokens and save to file
 asdadagp process tokens.txt --merge-tracks --output processed.txt
 
+# Split tokens into measures with structured output
+asdadagp split-measures input.txt output.json
+
 # Get detailed file information
 asdadagp info song.gp5
 ```
 
----
 
-## API Reference
-
-### Main Functions
-
-#### `asdadagp_encode(input_file, output_file, artist_token)`
-Convert a Guitar Pro file to token format.
-
-#### `asdadagp_decode(input_file, output_file)`
-Convert tokens back to a Guitar Pro file.
-
-#### `process_tokens(tokens, merge_tracks=True)`
-Process tokens with optional track merging.
-
-#### `process_raw_acoustic_solo_tokens(tokens)`
-Process tokens specifically for acoustic solo guitar.
-
-
-
-### Utility Functions
-
-#### `get_tuning_type(tuning)`
-Get the type of guitar tuning.
-
-#### `get_fret(note, tuning)`
-Get fret position for a note in a given tuning.
-
-#### `convert_spn_to_common(note)`
-Convert Scientific Pitch Notation to common notation.
-
----
 
 ## Contributing
 

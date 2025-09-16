@@ -175,6 +175,73 @@ def info_command(args):
         sys.exit(1)
 
 
+def split_measures_command(args):
+    """Split tokens into measures and output structured format."""
+    try:
+        input_file = validate_file_path(args.input_file)
+        output_file = args.output_file
+
+        # Ensure output directory exists
+        output_path = Path(output_file)
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+
+        print(f"Splitting measures in {input_file}")
+        print(f"Output: {output_file}")
+
+        # Read tokens from file
+        with open(input_file, "r") as f:
+            tokens = f.read().split("\n")
+
+        # Import measure splitting functions
+        from .processor import tokens_to_measures, measures_playing_order, get_string_tunings
+
+        # Convert tokens to TokenMeasure objects with repeat analysis
+        token_measures = tokens_to_measures(tokens)
+        
+        # Get the actual playing order considering repeats and alternatives
+        playing_order = measures_playing_order(token_measures)
+        
+        # Get the expanded measures in playing order
+        expanded_measures = []
+        for measure_idx in playing_order:
+            expanded_measures.append(token_measures[measure_idx].tokens)
+        
+        # Get tuning information - use simple approach
+        tuning = ["E5", "B4", "G4", "D4", "A3", "E3"]  # Default standard tuning
+        print(f"Using default tuning: {tuning}")
+
+        # Create measure order (indices of tokens in each measure)
+        measure_order = []
+        current_index = 0
+        
+        for measure in expanded_measures:
+            measure_indices = list(range(current_index, current_index + len(measure)))
+            measure_order.append(measure_indices)
+            current_index += len(measure)
+
+        # Create output structure
+        output_data = {
+            "tokens": {i: token for i, token in enumerate(tokens)},
+            "measure_order": measure_order,
+            "tuning": tuning
+        }
+
+        # Write output as JSON
+        import json
+        with open(output_file, "w") as f:
+            json.dump(output_data, f, indent=2)
+
+        print(f"Successfully split measures to {output_file}")
+        print(f"Total tokens: {len(tokens)}")
+        print(f"Original measures: {len(token_measures)}")
+        print(f"Expanded measures (with repeats): {len(expanded_measures)}")
+        print(f"Tuning: {tuning}")
+
+    except Exception as e:
+        print(f"Error during measure splitting: {e}", file=sys.stderr)
+        sys.exit(1)
+
+
 def main():
     """Main CLI entry point."""
     parser = argparse.ArgumentParser(
@@ -190,6 +257,9 @@ Examples:
   
   # Process tokens with track merging
   asdadagp process input.txt --merge-tracks --output processed.txt
+  
+  # Split tokens into measures
+  asdadagp split-measures input.txt output.json
   
   # Get information about a file
   asdadagp info input.gp5
@@ -228,7 +298,7 @@ Examples:
         "--output-file", "-o", help="Output file (default: stdout)"
     )
     process_parser.add_argument(
-        "--merge-tracks", action="store_true", help="Merge multiple tracks"
+        "--merge-tracks", action="store_true", help="Keep only the first track and discard additional tracks"
     )
     process_parser.add_argument(
         "--no-merge-tracks", action="store_true", help="Keep tracks separate"
@@ -242,6 +312,12 @@ Examples:
     info_parser = subparsers.add_parser("info", help="Display information about a file")
     info_parser.add_argument("input_file", help="Input file (Guitar Pro or token file)")
     info_parser.set_defaults(func=info_command)
+
+    # Split measures command
+    split_measures_parser = subparsers.add_parser("split-measures", help="Split tokens into measures")
+    split_measures_parser.add_argument("input_file", help="Input token file")
+    split_measures_parser.add_argument("output_file", help="Output JSON file")
+    split_measures_parser.set_defaults(func=split_measures_command)
 
     args = parser.parse_args()
 
