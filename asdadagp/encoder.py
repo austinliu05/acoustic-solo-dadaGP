@@ -475,10 +475,12 @@ def guitarpro2tokens(song, artist, verbose=False, note_tuning=False):
     return all_tokens
 
 
-def asdadagp_encode(input_file, output_file, artist_token):
+def asdadagp_encode(
+    input_file, output_file, note_tuning: bool = False, artist_token: str = "Unknown"
+):
     song = gp.parse(input_file)
     # Convert the song to tokens
-    tokens = guitarpro2tokens(song, artist_token, verbose=True)
+    tokens = guitarpro2tokens(song, artist_token, verbose=True, note_tuning=note_tuning)
     # Write the tokens to text file
     f = open(output_file, "w")
     f.write("\n".join(tokens))

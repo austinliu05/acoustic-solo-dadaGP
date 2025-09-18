@@ -7,15 +7,12 @@ and back to Guitar Pro format, specifically designed for acoustic solo guitar mu
 """
 
 import argparse
-import os
 import sys
 from pathlib import Path
-from typing import Optional
 
-from .decoder import asdadagp_decode, tokens2guitarpro
-from .encoder import asdadagp_encode, guitarpro2tokens
-from .processor import process_raw_acoustic_solo_tokens, process_tokens
-from .utils import get_tuning_type
+from .decoder import asdadagp_decode
+from .encoder import asdadagp_encode
+from .processor import get_string_tunings, tracks_check
 
 
 def validate_file_path(file_path: str, must_exist: bool = True) -> str:
@@ -41,7 +38,7 @@ def encode_command(args):
         print(f"Encoding {input_file} to {output_file}")
         print(f"Artist token: {args.artist}")
 
-        asdadagp_encode(input_file, output_file, args.artist)
+        asdadagp_encode(input_file, output_file, args.tuning, args.artist)
 
         print(f"Successfully encoded to {output_file}")
 
@@ -82,39 +79,92 @@ def process_command(args):
 
         print(f"Processing tokens from {input_file}")
 
-        if args.merge_tracks:
-            print("Merging tracks...")
-            processed = process_tokens(tokens, merge_tracks=True)
-        elif args.acoustic_solo:
-            print("Processing as acoustic solo...")
-            processed = process_raw_acoustic_solo_tokens(tokens)
+        tunings = get_string_tunings(tokens)
+
+        processed_tokens = tracks_check(tokens, args.merge_tracks)
+
+        if args.measures:
+            from .processor import measures_playing_order, tokens_to_measures
+
+            # Convert tokens to TokenMeasure objects with repeat analysis
+            token_measures = tokens_to_measures(processed_tokens)
+            measures = []
+            for tm in token_measures:
+                measures.append(tm.tokens)
+
+
+            # Get the actual playing order considering repeats and alternatives
+            playing_order = measures_playing_order(token_measures)
+
+            # Get the expanded measures in playing order
+            # expanded_measures = []
+            # for measure_idx in playing_order:
+            #     expanded_measures.append(token_measures[measure_idx].tokens)
+            #
+            # # Get tuning information - use simple approach
+            # # tuning = ["E5", "B4", "G4", "D4", "A3", "E3"]  # Default standard tuning
+            # # print(f"Using default tuning: {tuning}")
+            #
+            # # Create measure order (indices of tokens in each measure)
+            # measure_order = []
+            # current_index = 0
+            #
+            # for measure in expanded_measures:
+            #     measure_indices = list(
+            #         range(current_index, current_index + len(measure))
+            #     )
+            #     measure_order.append(measure_indices)
+            #     current_index += len(measure)
+
+            # Create output structure
+            output_data = {
+                "tokens": {i: token for i, token in enumerate(processed_tokens)},
+                # "measure_order": measure_order,
+                "measures": measures,
+                "playing_order": playing_order,
+                "tuning": tunings,
+            }
         else:
-            print("Processing tokens...")
-            processed = process_tokens(tokens, merge_tracks=args.no_merge_tracks)
+
+            output_data = processed_tokens
+
+        # if args.merge_tracks:
+        #     print("Merging tracks...")
+        #     processed = process_tokens(tokens, merge_tracks=True)
+        # elif args.acoustic_solo:
+        #     print("Processing as acoustic solo...")
+        #     processed = process_raw_acoustic_solo_tokens(tokens)
+        # else:
+        #     print("Processing tokens...")
+        #     processed = process_tokens(tokens, merge_tracks=args.no_merge_tracks)
 
         # Output results
-        if args.output_file:
-            output_file = args.output_file
-            output_path = Path(output_file)
-            output_path.parent.mkdir(parents=True, exist_ok=True)
+        # if args.output_file:
+        output_file = args.output_file
+        if not output_file.endswith(".json") and args.measures:
+            raise ValueError(
+                "Output file must be a .json file when using --measures option"
+            )
+        output_path = Path(output_file)
+        output_path.parent.mkdir(parents=True, exist_ok=True)
 
-            with open(output_file, "w") as f:
-                if isinstance(processed, dict):
-                    import json
-
-                    json.dump(processed, f, indent=2)
-                else:
-                    f.write("\n".join(processed))
-
-            print(f"Processed tokens saved to {output_file}")
-        else:
-            # Print to stdout
-            if isinstance(processed, dict):
+        with open(output_file, "w") as f:
+            if isinstance(output_data, dict):
                 import json
 
-                print(json.dumps(processed, indent=2))
+                json.dump(output_data, f, indent=2)
             else:
-                print("\n".join(processed))
+                f.write("\n".join(output_data))
+
+        print(f"Processed tokens saved to {output_file}")
+        # else:
+        #     # Print to stdout
+        #     if isinstance(processed, dict):
+        #         import json
+        #
+        #         print(json.dumps(processed, indent=2))
+        #     else:
+        #         print("\n".join(processed))
 
     except Exception as e:
         print(f"Error during processing: {e}", file=sys.stderr)
@@ -175,71 +225,77 @@ def info_command(args):
         sys.exit(1)
 
 
-def split_measures_command(args):
-    """Split tokens into measures and output structured format."""
-    try:
-        input_file = validate_file_path(args.input_file)
-        output_file = args.output_file
-
-        # Ensure output directory exists
-        output_path = Path(output_file)
-        output_path.parent.mkdir(parents=True, exist_ok=True)
-
-        print(f"Splitting measures in {input_file}")
-        print(f"Output: {output_file}")
-
-        # Read tokens from file
-        with open(input_file, "r") as f:
-            tokens = f.read().split("\n")
-
-        # Import measure splitting functions
-        from .processor import tokens_to_measures, measures_playing_order, get_string_tunings
-
-        # Convert tokens to TokenMeasure objects with repeat analysis
-        token_measures = tokens_to_measures(tokens)
-        
-        # Get the actual playing order considering repeats and alternatives
-        playing_order = measures_playing_order(token_measures)
-        
-        # Get the expanded measures in playing order
-        expanded_measures = []
-        for measure_idx in playing_order:
-            expanded_measures.append(token_measures[measure_idx].tokens)
-        
-        # Get tuning information - use simple approach
-        tuning = ["E5", "B4", "G4", "D4", "A3", "E3"]  # Default standard tuning
-        print(f"Using default tuning: {tuning}")
-
-        # Create measure order (indices of tokens in each measure)
-        measure_order = []
-        current_index = 0
-        
-        for measure in expanded_measures:
-            measure_indices = list(range(current_index, current_index + len(measure)))
-            measure_order.append(measure_indices)
-            current_index += len(measure)
-
-        # Create output structure
-        output_data = {
-            "tokens": {i: token for i, token in enumerate(tokens)},
-            "measure_order": measure_order,
-            "tuning": tuning
-        }
-
-        # Write output as JSON
-        import json
-        with open(output_file, "w") as f:
-            json.dump(output_data, f, indent=2)
-
-        print(f"Successfully split measures to {output_file}")
-        print(f"Total tokens: {len(tokens)}")
-        print(f"Original measures: {len(token_measures)}")
-        print(f"Expanded measures (with repeats): {len(expanded_measures)}")
-        print(f"Tuning: {tuning}")
-
-    except Exception as e:
-        print(f"Error during measure splitting: {e}", file=sys.stderr)
-        sys.exit(1)
+#
+# def split_measures_command(args):
+#     """Split tokens into measures and output structured format."""
+#     try:
+#         input_file = validate_file_path(args.input_file)
+#         output_file = args.output_file
+#
+#         # Ensure output directory exists
+#         output_path = Path(output_file)
+#         output_path.parent.mkdir(parents=True, exist_ok=True)
+#
+#         print(f"Splitting measures in {input_file}")
+#         print(f"Output: {output_file}")
+#
+#         # Read tokens from file
+#         with open(input_file, "r") as f:
+#             tokens = f.read().split("\n")
+#
+#         # Import measure splitting functions
+#         from .processor import (
+#             get_string_tunings,
+#             measures_playing_order,
+#             tokens_to_measures,
+#         )
+#
+#         # Convert tokens to TokenMeasure objects with repeat analysis
+#         token_measures = tokens_to_measures(tokens)
+#
+#         # Get the actual playing order considering repeats and alternatives
+#         playing_order = measures_playing_order(token_measures)
+#
+#         # Get the expanded measures in playing order
+#         expanded_measures = []
+#         for measure_idx in playing_order:
+#             expanded_measures.append(token_measures[measure_idx].tokens)
+#
+#         # Get tuning information - use simple approach
+#         tuning = ["E5", "B4", "G4", "D4", "A3", "E3"]  # Default standard tuning
+#         print(f"Using default tuning: {tuning}")
+#
+#         # Create measure order (indices of tokens in each measure)
+#         measure_order = []
+#         current_index = 0
+#
+#         for measure in expanded_measures:
+#             measure_indices = list(range(current_index, current_index + len(measure)))
+#             measure_order.append(measure_indices)
+#             current_index += len(measure)
+#
+#         # Create output structure
+#         output_data = {
+#             "tokens": {i: token for i, token in enumerate(tokens)},
+#             "measure_order": measure_order,
+#             "tuning": tuning,
+#         }
+#
+#         # Write output as JSON
+#         import json
+#
+#         with open(output_file, "w") as f:
+#             json.dump(output_data, f, indent=2)
+#
+#         print(f"Successfully split measures to {output_file}")
+#         print(f"Total tokens: {len(tokens)}")
+#         print(f"Original measures: {len(token_measures)}")
+#         print(f"Expanded measures (with repeats): {len(expanded_measures)}")
+#         print(f"Tuning: {tuning}")
+#
+#     except Exception as e:
+#         print(f"Error during measure splitting: {e}", file=sys.stderr)
+#         sys.exit(1)
 
 
 def main():
@@ -277,7 +333,16 @@ Examples:
     )
     encode_parser.add_argument("output_file", help="Output token file")
     encode_parser.add_argument(
-        "--artist", required=True, help="Artist name for the token file"
+        "--artist",
+        required=False,
+        default="Unknown",
+        help="Artist name for the token file",
+    )
+    encode_parser.add_argument(
+        "--tuning",
+        default=False,
+        action="store_true",
+        help="Append tuning to note tokens",
     )
     encode_parser.set_defaults(func=encode_command)
 
@@ -294,18 +359,28 @@ Examples:
         "process", help="Process tokens with various options"
     )
     process_parser.add_argument("input_file", help="Input token file")
+    process_parser.add_argument("output_file", help="Output file")
+    # process_parser.add_argument(
+    #     "--output-file", "-o", help="Output file (default: stdout)"
+    # )
     process_parser.add_argument(
-        "--output-file", "-o", help="Output file (default: stdout)"
+        "--merge-tracks",
+        action="store_true",
+        default=False,
+        help="Keep only the first track and discard additional tracks",
     )
     process_parser.add_argument(
-        "--merge-tracks", action="store_true", help="Keep only the first track and discard additional tracks"
+        "--measures",
+        action="store_true",
+        default=False,
+        help="Keep only the first track and discard additional tracks",
     )
-    process_parser.add_argument(
-        "--no-merge-tracks", action="store_true", help="Keep tracks separate"
-    )
-    process_parser.add_argument(
-        "--acoustic-solo", action="store_true", help="Process as acoustic solo"
-    )
+    # process_parser.add_argument(
+    #     "--no-merge-tracks", action="store_true", help="Keep tracks separate"
+    # )
+    # process_parser.add_argument(
+    #     "--acoustic-solo", action="store_true", help="Process as acoustic solo"
+    # )
     process_parser.set_defaults(func=process_command)
 
     # Info command
@@ -313,11 +388,13 @@ Examples:
     info_parser.add_argument("input_file", help="Input file (Guitar Pro or token file)")
     info_parser.set_defaults(func=info_command)
 
-    # Split measures command
-    split_measures_parser = subparsers.add_parser("split-measures", help="Split tokens into measures")
-    split_measures_parser.add_argument("input_file", help="Input token file")
-    split_measures_parser.add_argument("output_file", help="Output JSON file")
-    split_measures_parser.set_defaults(func=split_measures_command)
+    # # Split measures command
+    # split_measures_parser = subparsers.add_parser(
+    #     "split-measures", help="Split tokens into measures"
+    # )
+    # split_measures_parser.add_argument("input_file", help="Input token file")
+    # split_measures_parser.add_argument("output_file", help="Output JSON file")
+    # split_measures_parser.set_defaults(func=split_measures_command)
 
     args = parser.parse_args()
 

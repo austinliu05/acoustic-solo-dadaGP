@@ -20,18 +20,20 @@ def test_strings_tokens():
         "s5": "A2",  # A3 -> A2
         "s6": "D2",  # D3 -> D2
     }
-    
+
     gp_path = os.path.join(DATA_FOLDER_PATH, "bensusan_pierre-dame_lombarde.gp5")
     song = gp.parse(gp_path)
     tokens = guitarpro2tokens(song, "unknown", verbose=True, note_tuning=True)
-    
+
     # Test that note tokens end with the correct downtuned tunings
     for token in tokens:
         if "note" in token:
             start = token.index("note") + len("note")
             guitar_string = token[start + 1 : start + 3]
             expected_tuning = celtic_tuning_downtuned[guitar_string]
-            assert token.endswith(expected_tuning), f"Token {token} should end with {expected_tuning} for string {guitar_string}"
+            assert token.endswith(
+                expected_tuning
+            ), f"Token {token} should end with {expected_tuning} for string {guitar_string}"
 
     assert tokens[3] == "start"
 
@@ -40,7 +42,7 @@ def test_strings_tokens():
     tokens_without_tuning = guitarpro2tokens(
         song, "unknown", verbose=True, note_tuning=False
     )
-    
+
     # The downtuned celtic tuning (same as when note_tuning=True)
     downtuned_celtic_tuning = {
         "s1": "D4",  # D5 -> D4
@@ -50,10 +52,12 @@ def test_strings_tokens():
         "s5": "A2",  # A3 -> A2
         "s6": "D2",  # D3 -> D2
     }
-    
+
     for i in range(3, 9):
         expected_tuning = downtuned_celtic_tuning[f"s{i-2}"]
         actual_tuning = tokens_without_tuning[i]
-        assert actual_tuning == expected_tuning, f"Expected {expected_tuning} at position {i}, got {actual_tuning}"
+        assert (
+            actual_tuning == expected_tuning
+        ), f"Expected {expected_tuning} at position {i}, got {actual_tuning}"
 
     assert tokens_without_tuning[9] == "start"
