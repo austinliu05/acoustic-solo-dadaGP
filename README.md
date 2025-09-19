@@ -100,7 +100,7 @@ asdadagp encode INPUT.gp[3|4|5|x] OUTPUT.txt [--artist NAME] [--tuning]
 - `INPUT.gp*` — Guitar Pro file to encode
 - `OUTPUT.txt` — destination token file (one token per line)
 - `--artist NAME` — optional first‑line artist token (default: `"Unknown"`)
-- `--tuning` — if set, append tuning info to note tokens
+- `--tuning` — if set, append tuning info to note tokens; otherwise only string tunings in the header
 
 ### `decode` — tokens → Guitar Pro
 
@@ -117,7 +117,7 @@ asdadagp decode INPUT.txt OUTPUT.gp5
 asdadagp process INPUT.txt OUTPUT.(txt|json) [--merge-tracks] [--measures]
 ```
 
-- `--merge-tracks` — keep only the first acoustic/clean guitar track and
+- `--merge-tracks` — Merge all tracks into 1 (otherwise it keeps only the first acoustic/clean guitar track) and
   remove `cleanX:` prefixes (e.g., `clean0:note:s6:f0:D3 → note:s6:f0:D3`)
 - `--measures` — output a **JSON** object with:
   - `tokens` — index→token map (all processed tokens)
@@ -138,7 +138,7 @@ asdadagp info INPUT.(gp3|gp4|gp5|gpx|txt)
 
 ---
 
-## Python API
+## Python Reference
 
 Import from the top‑level package `asdadagp`:
 
