@@ -13,9 +13,8 @@ A modification of [DadaGP](https://github.com/dada-bots/dadaGP) tailored for **a
 5. [Quick Start](#quick-start)  
 6. [CLI Reference](#cli-reference)  
 7. [Python Reference](#python-reference)  
-8. [Notes & Tips](#notes--tips)  
-9. [Contributing](#contributing)  
-10. [License](#license)
+8. [Contributing](#contributing)  
+9. [License](#license)
 
 ---
 
@@ -191,34 +190,6 @@ Parses tokens into measure objects (repeat/alternative markers retained in struc
 
 #### `measures_playing_order(measures: list[TokenMeasure], tokens: bool = False) -> list[int] | list[list[str]]`
 Computes actual playback order considering repeats and alternatives. If `tokens=True`, returns the measures’ token lists in order rather than indices.
-
-### Utilities
-
-#### `get_tuning_type(tuning: list[str]) -> str`
-Classifies tuning (e.g., standard vs drop).
-
-#### `get_fret(string_spn: str) -> int`
-Returns fret number for an SPN note on a string (internal use during encode).
-
-#### `convert_spn_to_common(spn: str) -> str`
-Converts scientific pitch notation (e.g., `E4`) to common token form.
-
-### Constants
-
-- `instrument_groups`: mapping of MIDI instrument→group (e.g., clean/acoustic)
-- `supported_times`: allowed time divisions for GP encoding/decoding
-- `wait_token_list2`: token set used to represent rests/waits
-
-> See `asdadagp/const.py` for full enumerations.
-
----
-
-## Notes & Tips
-
-- **GP version:** decoding targets GP5 by default for compatibility.
-- **Track limits:** assertions enforce a maximum number of clean/acoustic tracks (see `encoder.py`).
-- **Drop/Celtic tunings:** supported during encode and influence tokenization if `--tuning` is used.
-- **Measure JSON:** the `playing_order` is derived from repeat/alternative markers; if it errors, the source GP may have inconsistent repeat bounds.
 
 ---
 
