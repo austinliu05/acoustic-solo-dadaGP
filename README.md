@@ -12,7 +12,7 @@ A modification of [DadaGP](https://github.com/dada-bots/dadaGP) tailored for **a
 4. [Installation](#installation)  
 5. [Quick Start](#quick-start)  
 6. [CLI Reference](#cli-reference)  
-7. [Python API](#python-api)  
+7. [Python Reference](#python-reference)  
 8. [Notes & Tips](#notes--tips)  
 9. [Contributing](#contributing)  
 10. [License](#license)
