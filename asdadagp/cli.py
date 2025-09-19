@@ -257,7 +257,7 @@ Examples:
         "--merge-tracks",
         action="store_true",
         default=False,
-        help="Keep only the first track and discard additional tracks",
+        help="Merge all tracks into one, otherwise keep only the first track and discard additional tracks",
     )
     process_parser.add_argument(
         "--measures",
