@@ -1,60 +1,59 @@
 # acoustic-solo-dadaGP
 
-A modification of [DadaGP](https://github.com/dada-bots/dadaGP/tree/main) customized for gp files of acoustic solo. It supports gp files with alternative string tuning and/or more than 2 acoustic tracks.
+A modification of [DadaGP](https://github.com/dada-bots/dadaGP) tailored for **acoustic solo guitar** workflows. It supports alternative string tunings and multi‑track acoustic/clean guitar parts, with a simple CLI and a small public Python API.
 
 ---
 
 ## Table of Contents
 
 1. [Background & Attribution](#background--attribution)  
-2. [What's Changed](#whats-changed)  
+2. [What’s Changed](#whats-changed)  
 3. [Features](#features)  
 4. [Installation](#installation)  
-5. [Usage](#usage)  
-6. [Command Line Interface](#command-line-interface)
-7. [API Reference](#api-reference)
-8. [Contributing](#contributing)  
-9. [License](#license)  
+5. [Quick Start](#quick-start)  
+6. [CLI Reference](#cli-reference)  
+7. [Python API](#python-api)  
+8. [Notes & Tips](#notes--tips)  
+9. [Contributing](#contributing)  
+10. [License](#license)
 
 ---
 
 ## Background & Attribution
 
-This repo is a **fork** of [dadaGP](https://github.com/dada-bots/dadaGP) by `dada-bots`.
+This project is a **fork** of [`dada-bots/dadaGP`](https://github.com/dada-bots/dadaGP). Credit to the original authors for the foundational GP↔︎token pipeline.
 
 ---
 
-## What's Changed
+## What’s Changed
 
-- **Enhanced Acoustic Support**: Optimized for acoustic solo guitar files
-- **Alternative Tunings**: Full support for various guitar tunings including Celtic tuning
-- **Multi-track Processing**: Support for up to 3 clean/acoustic guitar tracks
-- **Command Line Interface**: Easy-to-use CLI for file processing
-- **Improved Token Processing**: Better handling of acoustic-specific musical elements
+- **Enhanced Acoustic Support** — optimized defaults and checks for acoustic/clean guitar usage.
+- **Alternative Tunings** — supports non‑standard tunings (drop D, Celtic, etc.).
+- **Multi‑track Handling** — process up to 3 acoustic/clean tracks; optional merge‑down to one.
+- **Refined CLI** — ergonomic `asdadagp` tool for encode/decode/process/info.
+- **Token Utilities** — helpers for measure splitting, repeats/alternatives, and tuning extraction.
 
 ---
 
 ## Features
 
-- **Guitar Pro File Processing**: Convert `.gp3`, `.gp4`, `.gp5`, and `.gpx` files to tokenized format
-- **Alternative String Tunings**: Support for various guitar tunings (standard, drop D, Celtic, etc.)
-- **Multi-track Support**: Handle multiple acoustic guitar tracks (up to 3)
-- **Token-based Processing**: Advanced token system for representing musical elements
-- **Track Merging**: Merge multiple tracks into a single representation
-- **File Validation**: Validate Guitar Pro files for compatibility
-- **Comprehensive CLI**: Full command-line interface for all operations
+- Convert `.gp3/.gp4/.gp5/.gpx` ⇆ token text files
+- Optional **track merge**: keep only the first acoustic/clean track and strip `cleanX:` prefixes
+- **Measure & repeat analysis** helpers (playing order, measure objects)
+- Basic **file validation / info** summaries
+- Small **Python API** for scripting
 
 ---
 
 ## Installation
 
-### From PyPI (Recommended)
+### From PyPI (recommended)
 
 ```bash
 pip install acoustic-solo-dadaGP
 ```
 
-### From Source
+### From source
 
 ```bash
 git clone https://github.com/austinliu05/acoustic-solo-dadaGP.git
@@ -62,113 +61,178 @@ cd acoustic-solo-dadaGP
 pip install -e .
 ```
 
+Python >=3.8 is required.
+
 ---
 
-## Usage
-
-### Command Line Interface
-
-The package provides a comprehensive CLI with the following commands:
-
-#### Encode Guitar Pro to Tokens
+## Quick Start
 
 ```bash
-asdadagp encode input.gp5 output.txt --artist "Artist Name"
-```
-
-#### Decode Tokens to Guitar Pro
-
-```bash
-asdadagp decode input.txt output.gp5
-```
-
-#### Process Tokens
-
-```bash
-# Process with track merging (keep only first track)
-asdadagp process input.txt --merge-tracks --output processed.txt
-
-# Process as acoustic solo
-asdadagp process input.txt --acoustic-solo --output processed.txt
-
-# Keep tracks separate
-asdadagp process input.txt --no-merge-tracks --output processed.txt
-```
-
-**Track Merging (`--merge-tracks`):**
-- Removes `cleanX:` prefixes from tokens (e.g., `clean0:note:s6:f0:D3` → `note:s6:f0:D3`)
-- Keeps only the first guitar track (clean0) and discards additional tracks
-- Preserves all musical content (notes, effects, timing)
-
-#### Split Measures
-
-```bash
-# Split tokens into measures with structured output
-asdadagp split-measures input.txt output.json
-```
-
-**What it does:**
-- Splits tokens by `new_measure` boundaries
-- Outputs structured JSON with:
-  - `tokens`: Indexed mapping of all tokens
-  - `measure_order`: Lists of token indices for each measure
-  - `tuning`: Guitar string tuning information
-
-#### Get File Information
-
-```bash
-# Guitar Pro file info
-asdadagp info input.gp5
-
-# Token file info
-asdadagp info input.txt
-```
-
-
-
-## Command Line Interface
-
-### Available Commands
-
-- **`encode`**: Convert Guitar Pro files to token format
-- **`decode`**: Convert tokens back to Guitar Pro files
-- **`process`**: Process tokens with various options (including track merging)
-- **`split-measures`**: Split tokens into measures with structured output
-- **`info`**: Display information about files
-
-### Examples
-
-```bash
-# Basic encoding
+# Encode a Guitar Pro file to tokens
 asdadagp encode song.gp5 tokens.txt --artist "John Doe"
 
-# Decoding with custom output
-asdadagp decode tokens.txt output.gp5
+# Decode tokens back to Guitar Pro
+asdadagp decode tokens.txt song_out.gp5
 
-# Process tokens and save to file
-asdadagp process tokens.txt --merge-tracks --output processed.txt
+# Process tokens: merge to single acoustic track
+asdadagp process tokens.txt processed.txt --merge-tracks
 
-# Split tokens into measures with structured output
-asdadagp split-measures input.txt output.json
+# Process tokens with structured measures JSON (includes tuning & playing order)
+asdadagp process tokens.txt processed.json --merge-tracks --measures
 
-# Get detailed file information
+# Inspect file info (works for both .gp* or token files)
 asdadagp info song.gp5
+asdadagp info tokens.txt
 ```
 
+---
 
+## CLI Reference
+
+The package installs the `asdadagp` command.
+
+### `encode` — Guitar Pro → tokens
+
+```
+asdadagp encode INPUT.gp[3|4|5|x] OUTPUT.txt [--artist NAME] [--tuning]
+```
+
+- `INPUT.gp*` — Guitar Pro file to encode
+- `OUTPUT.txt` — destination token file (one token per line)
+- `--artist NAME` — optional first‑line artist token (default: `"Unknown"`)
+- `--tuning` — if set, append tuning info to note tokens
+
+### `decode` — tokens → Guitar Pro
+
+```
+asdadagp decode INPUT.txt OUTPUT.gp5
+```
+
+- `INPUT.txt` — token file produced by `encode`/processing
+- `OUTPUT.gp5` — Guitar Pro output (GP5 format is typical target)
+
+### `process` — transform token streams
+
+```
+asdadagp process INPUT.txt OUTPUT.(txt|json) [--merge-tracks] [--measures]
+```
+
+- `--merge-tracks` — keep only the first acoustic/clean guitar track and
+  remove `cleanX:` prefixes (e.g., `clean0:note:s6:f0:D3 → note:s6:f0:D3`)
+- `--measures` — output a **JSON** object with:
+  - `tokens` — index→token map (all processed tokens)
+  - `measures` — list of per‑measure token lists
+  - `playing_order` — measure indices in actual playback order accounting for repeats/alternatives
+  - `tuning` — string tuning extracted from tokens
+
+> If `--measures` is used, `OUTPUT` **must** end with `.json`.
+
+### `info` — summarize a file
+
+```
+asdadagp info INPUT.(gp3|gp4|gp5|gpx|txt)
+```
+
+- For `.gp*` files: prints title/artist/album/track count/measure count/tempo + per‑track tunings
+- For token files: prints token counts and rough token‑type histogram
+
+---
+
+## Python API
+
+Import from the top‑level package `asdadagp`:
+
+```python
+from asdadagp import (
+    __version__,
+    # main conversions
+    asdadagp_encode, guitarpro2tokens,
+    asdadagp_decode, tokens2guitarpro,
+    # processing helpers
+    get_string_tunings, tracks_check, tokens_to_measures, measures_playing_order,
+    # utilities
+    get_tuning_type, get_fret, convert_spn_to_common,
+    # constants
+    instrument_groups, supported_times, wait_token_list2,
+)
+```
+
+### Conversions
+
+#### `asdadagp_encode(input_file: str, output_file: str, note_tuning: bool, artist_token: str) -> None`
+Encodes a Guitar Pro file into a token text file.
+- **input_file**: path to `.gp3/.gp4/.gp5/.gpx` file  
+- **output_file**: path to write tokens (one per line)  
+- **note_tuning**: if `True`, append tuning to note tokens  
+- **artist_token**: first‑line artist token (e.g., `"John Doe"`)  
+
+Related lower‑level function:
+
+#### `guitarpro2tokens(song: guitarpro.Song, artist: str, verbose: bool, note_tuning: bool) -> list[str]`
+Converts an in‑memory `guitarpro.Song` into tokens.
+
+#### `asdadagp_decode(input_file: str, output_file: str) -> None`
+Decodes a token text file back into a Guitar Pro file.  
+Related lower‑level function:
+
+#### `tokens2guitarpro(all_tokens: list[str], verbose: bool = False) -> guitarpro.Song`
+Builds an in‑memory `guitarpro.Song` from tokens.
+
+### Processing
+
+#### `get_string_tunings(tokens: list[str]) -> list[str]`
+Extracts per‑string tunings from a token list.
+
+#### `tracks_check(tokens: list[str], merge_track: bool) -> list[str]`
+Optionally merges to the first acoustic/clean track and removes `cleanX:` prefixes.
+
+#### `tokens_to_measures(tokens: list[str]) -> list[TokenMeasure]`
+Parses tokens into measure objects (repeat/alternative markers retained in structure).
+
+#### `measures_playing_order(measures: list[TokenMeasure], tokens: bool = False) -> list[int] | list[list[str]]`
+Computes actual playback order considering repeats and alternatives. If `tokens=True`, returns the measures’ token lists in order rather than indices.
+
+### Utilities
+
+#### `get_tuning_type(tuning: list[str]) -> str`
+Classifies tuning (e.g., standard vs drop).
+
+#### `get_fret(string_spn: str) -> int`
+Returns fret number for an SPN note on a string (internal use during encode).
+
+#### `convert_spn_to_common(spn: str) -> str`
+Converts scientific pitch notation (e.g., `E4`) to common token form.
+
+### Constants
+
+- `instrument_groups`: mapping of MIDI instrument→group (e.g., clean/acoustic)
+- `supported_times`: allowed time divisions for GP encoding/decoding
+- `wait_token_list2`: token set used to represent rests/waits
+
+> See `asdadagp/const.py` for full enumerations.
+
+---
+
+## Notes & Tips
+
+- **GP version:** decoding targets GP5 by default for compatibility.
+- **Track limits:** assertions enforce a maximum number of clean/acoustic tracks (see `encoder.py`).
+- **Drop/Celtic tunings:** supported during encode and influence tokenization if `--tuning` is used.
+- **Measure JSON:** the `playing_order` is derived from repeat/alternative markers; if it errors, the source GP may have inconsistent repeat bounds.
+
+---
 
 ## Contributing
 
 1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
+2. Create a feature branch: `git checkout -b feature/your-feature`
+3. Commit: `git commit -m "feat: add your feature"`
+4. Push: `git push origin feature/your-feature`
 5. Open a Pull Request
 
 ---
 
 ## License
 
-This fork is released under the **MIT License**. See [LICENSE](LICENSE).
-
-The original project `dadaGP` by `dada-bots` is also under MIT; see their [LICENSE](https://github.com/dada-bots/dadaGP?tab=MIT-1-ov-file).
+Released under the **MIT License**. See [LICENSE](LICENSE).  
+Original project **dadaGP** by `dada-bots` is MIT as well.
