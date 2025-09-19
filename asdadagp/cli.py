@@ -92,7 +92,6 @@ def process_command(args):
             for tm in token_measures:
                 measures.append(tm.tokens)
 
-
             # Get the actual playing order considering repeats and alternatives
             playing_order = measures_playing_order(token_measures)
 
@@ -185,7 +184,6 @@ def info_command(args):
     except Exception as e:
         print(f"Error getting file info: {e}", file=sys.stderr)
         sys.exit(1)
-
 
 
 def main():

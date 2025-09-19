@@ -6,17 +6,16 @@ from .const import PKG_NAME
 _LOGGER = getLogger(PKG_NAME)
 
 # Constants
-from .const import instrument_groups, supported_times, wait_token_list2
 from .decoder import asdadagp_decode, tokens2guitarpro
 
 # Main functions
 from .encoder import asdadagp_encode, guitarpro2tokens
-
-# Utility functions
-from .utils import convert_spn_to_common, get_fret, get_tuning_type
-
-# from .processor import process_raw_acoustic_solo_tokens
-
+from .processor import (
+    get_string_tunings,
+    measures_playing_order,
+    tokens_to_measures,
+    tracks_check,
+)
 
 __all__ = [
     # Version and logging
@@ -28,12 +27,9 @@ __all__ = [
     "guitarpro2tokens",
     "asdadagp_decode",
     "tokens2guitarpro",
-    # Utility functions
-    "get_tuning_type",
-    "get_fret",
-    "convert_spn_to_common",
-    # Constants
-    "instrument_groups",
-    "supported_times",
-    "wait_token_list2",
+    # Processor functions
+    "tracks_check",
+    "get_string_tunings",
+    "tokens_to_measures",
+    "measures_playing_order",
 ]
