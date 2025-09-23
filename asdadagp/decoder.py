@@ -1,4 +1,5 @@
 import math
+import os
 from fractions import Fraction
 
 import guitarpro
@@ -11,9 +12,18 @@ from .utils import (
     tokens_to_note_effect,
 )
 
+SCRIPTS_PATH = os.path.dirname(os.path.abspath(__file__))
+
+
+from typing import List, Union
+
+from .processor import pre_decoding_processing
+
 
 # Given a list of tokens, constructs a guitarpro song object
-def tokens2guitarpro(all_tokens, verbose=False):
+def tokens2guitarpro(
+    all_tokens: List[str], verbose: bool = False, tunings: Union[None, List[str]] = None
+):
     # Interpret a token list back into a GP song file
     ## TODO: some kinda validation/flexibility for weird files the net generates?
     ## For now let's just support valid dataset files
@@ -51,49 +61,6 @@ def tokens2guitarpro(all_tokens, verbose=False):
         if not instrument_check[instrument]:
             # this instrument doesn't exist in the score
             continue
-        if instrument == "drums":
-            # ignore drums
-            continue
-        # treat bass differently
-        if instrument == "bass":
-            ## Get info on bass strings
-
-            # Check which strings we got
-            # "b4_standard", "b5_standard", "b6_standard", "b4_drop"
-
-            # bass strings
-            strings = 4
-            drop_tuning = False
-
-            # Note: Strings are 1-indexed
-            # Note: 4 string and 5 string basses start at string 2
-            string_count = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0}
-            for token in body:
-                t = token.split(":")
-                if len(t) > 1 and t[0] == "bass" and t[1] == "note":
-                    string = int(t[2][1:])  # ex "s4"
-                    fret = int(t[3][1:])  # ex "f5"
-                    if fret == -1 or fret == -2:
-                        if string == 5 or string == 6:
-                            drop_tuning = True
-                        else:
-                            assert False, "Drop tuning only allowed on string 5 and 6"
-
-                    string_count[string] += 1
-            # print(string_count)
-            if string_count[1] > 0:
-                # it's a 6 string, it has the high C string (strings 1,2,3,4,5,6)
-                strings = 6
-            elif string_count[6] > 0:
-                # it's a 5 string (strings 2,3,4,5,6)
-                strings = 5
-            else:
-                # it's a 4 string (strings 2,3,4,5)
-                strings = 4
-            instrument_stringinfo[instrument] = {
-                "drop_tuning": drop_tuning,
-                "strings": strings,
-            }
 
         else:
             # everything else
@@ -308,7 +275,7 @@ def tokens2guitarpro(all_tokens, verbose=False):
     # CREATE a new GP5 file from BLANKGP5
 
     ## LOAD the BLANK GP5 SCORE
-    blankgp5 = gp.parse("blank.gp5")
+    blankgp5 = gp.parse(os.path.join(SCRIPTS_PATH, "blank.gp5"))
     blankgp5.tracks = []
     blankgp5.tempo = initial_tempo
 
@@ -360,16 +327,19 @@ def tokens2guitarpro(all_tokens, verbose=False):
         # Now set the strings
         drop = instrument_stringinfo[instrument]["drop_tuning"]
         n_strings = instrument_stringinfo[instrument]["strings"]
-        if n_strings == 6:
-            if drop:
-                strings = ["E5", "B4", "G4", "D4", "A3", "D3"]
-            else:
-                strings = ["E5", "B4", "G4", "D4", "A3", "E3"]
-        elif n_strings == 7:
-            if drop:
-                strings = ["E5", "B4", "G4", "D4", "A3", "D3", "A2"]
-            else:
-                strings = ["E5", "B4", "G4", "D4", "A3", "E3", "B2"]
+        if tunings:
+            strings = tunings
+        else:
+            if n_strings == 6:
+                if drop:
+                    strings = ["E5", "B4", "G4", "D4", "A3", "D3"]
+                else:
+                    strings = ["E5", "B4", "G4", "D4", "A3", "E3"]
+            elif n_strings == 7:
+                if drop:
+                    strings = ["E5", "B4", "G4", "D4", "A3", "D3", "A2"]
+                else:
+                    strings = ["E5", "B4", "G4", "D4", "A3", "E3", "B2"]
         new_track.strings = convert_strings_for_pygp(strings, pitch_shift)
 
         blankgp5.tracks.append(new_track)

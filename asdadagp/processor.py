@@ -326,3 +326,33 @@ def tracks_check(tokens: List[str], merge_track: bool = True) -> List[str]:
             processed.extend(merged)
 
     return processed
+
+
+def pre_decoding_processing(tokens: List[str]) -> Tuple[List[str], List[str]]:
+    results = []
+    tunings = get_string_tunings(tokens)
+
+    if tokens[3] == "start":
+        head = tokens[:4]
+        tune_in_token = True
+        body = tokens[4:]
+    else:
+        head = tokens[:3]
+        head.append("start")
+        tune_in_token = False
+        body = tokens[10:]
+
+    results.extend(head)
+
+    for t in body:
+        if t.startswith("note") or t.startswith("rest"):
+            t = f"clean0:{t}"
+
+        if "note" in t and tune_in_token:
+            token_elements = t.split(":")
+            without_string = token_elements[:-1]
+            t = ":".join(without_string)
+
+        results.append(t)
+
+    return results, tunings
