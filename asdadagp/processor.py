@@ -3,6 +3,8 @@ import re
 from dataclasses import dataclass
 from typing import List, Tuple, Union
 
+from tqdm import tqdm
+
 _LOGGER = logging.getLogger(__name__)
 
 
@@ -242,7 +244,9 @@ def get_string_tunings(tokens: List[str]) -> List[str]:
         string_tuning_dict = {}
         while len(string_tuning_dict) < 6:
             for token in tokens:
-                if token.startswith("clean") and "note" in token:
+                if (token.startswith("clean") and "note" in token) or token.startswith(
+                    "note"
+                ):
                     start = token.index("note") + len("note")
                     guitar_string = int(token[start + 2])
                     tuning = token.split(":")[-1]
@@ -329,30 +333,56 @@ def tracks_check(tokens: List[str], merge_track: bool = True) -> List[str]:
 
 
 def pre_decoding_processing(tokens: List[str]) -> Tuple[List[str], List[str]]:
-    results = []
-    tunings = get_string_tunings(tokens)
+    """
+    Pre-processes the tokens before decoding by separating head and body,
+    normalizing note/rest prefixes, and handling tuning blocks.
 
-    if tokens[3] == "start":
+    :param tokens: List of tokens from the tab.
+    :return: A tuple containing:
+        - List of processed tokens with normalized prefixes and tuning handling.
+        - List of string tunings extracted from the tokens.
+    """
+    # Decide head/body without repeated slicing
+    if len(tokens) > 3 and tokens[3] == "start":
         head = tokens[:4]
         tune_in_token = True
-        body = tokens[4:]
+        start_idx = 4
     else:
-        head = tokens[:3]
-        head.append("start")
+        # Build head without append inside hot loop
+        head = tokens[:3] + ["start"]
         tune_in_token = False
-        body = tokens[10:]
+        # NOTE: this used to be tokens[10:], which skips 7 extra items.
+        # If that was intentional, keep 10; if not, 4 is more typical.
+        start_idx = 10
 
+    # If get_string_tunings is expensive and only depends on head,
+    # consider passing just head or caching upstream if possible.
+
+    tunings = get_string_tunings(tokens)
+
+    results: List[str] = []
+    append = results.append
+    startswith = str.startswith
+    endswith = str.endswith
+    rfind = str.rfind
+
+    # Pre-extend with head once
     results.extend(head)
 
-    for t in body:
-        if t.startswith("note") or t.startswith("rest"):
-            t = f"clean0:{t}"
+    # Iterate body
+    for t in tokens[start_idx:]:
+        # Normalize note/rest prefix
+        if startswith(t, "note") or startswith(t, "rest"):
+            t = "clean0:" + t
 
-        if "note" in t and tune_in_token:
-            token_elements = t.split(":")
-            without_string = token_elements[:-1]
-            t = ":".join(without_string)
-
-        results.append(t)
+        # If we're inside a tuning block, strip the final ":<string>" from note tokens
+        if tune_in_token and (
+            startswith(t, "note")
+            or (startswith(t, "clean") and not endswith(t, "rest"))
+        ):
+            i = rfind(t, ":")
+            if i != -1:
+                t = t[:i]
+        append(t)
 
     return results, tunings

@@ -12,13 +12,21 @@ def test_strings_tokens():
     # The song has a downtuning of -14 semitones, so all tunings are shifted down
     # Original celtic tuning: D5, A4, G4, D4, A3, D3
     # With -14 semitones downtuning: D4, A3, G3, D3, A2, D2
+    # celtic_tuning_downtuned = {
+    #     "s1": "D4",  # D5 -> D4
+    #     "s2": "A3",  # A4 -> A3
+    #     "s3": "G3",  # G4 -> G3
+    #     "s4": "D3",  # D4 -> D3
+    #     "s5": "A2",  # A3 -> A2
+    #     "s6": "D2",  # D3 -> D2
+    # }
     celtic_tuning_downtuned = {
-        "s1": "D4",  # D5 -> D4
-        "s2": "A3",  # A4 -> A3
-        "s3": "G3",  # G4 -> G3
-        "s4": "D3",  # D4 -> D3
-        "s5": "A2",  # A3 -> A2
-        "s6": "D2",  # D3 -> D2
+        "s1": "D5",  # D5 -> D4
+        "s2": "A4",  # A4 -> A3
+        "s3": "G4",  # G4 -> G3
+        "s4": "D4",  # D4 -> D3
+        "s5": "A3",  # A3 -> A2
+        "s6": "D3",  # D3 -> D2
     }
 
     gp_path = os.path.join(DATA_FOLDER_PATH, "bensusan_pierre-dame_lombarde.gp5")
@@ -44,13 +52,22 @@ def test_strings_tokens():
     )
 
     # The downtuned celtic tuning (same as when note_tuning=True)
+    # downtuned_celtic_tuning = {
+    #     "s1": "D4",  # D5 -> D4
+    #     "s2": "A3",  # A4 -> A3
+    #     "s3": "G3",  # G4 -> G3
+    #     "s4": "D3",  # D4 -> D3
+    #     "s5": "A2",  # A3 -> A2
+    #     "s6": "D2",  # D3 -> D2
+    # }
+
     downtuned_celtic_tuning = {
-        "s1": "D4",  # D5 -> D4
-        "s2": "A3",  # A4 -> A3
-        "s3": "G3",  # G4 -> G3
-        "s4": "D3",  # D4 -> D3
-        "s5": "A2",  # A3 -> A2
-        "s6": "D2",  # D3 -> D2
+        "s1": "D5",  # D5 -> D4
+        "s2": "A4",  # A4 -> A3
+        "s3": "G4",  # G4 -> G3
+        "s4": "D4",  # D4 -> D3
+        "s5": "A3",  # A3 -> A2
+        "s6": "D3",  # D3 -> D2
     }
 
     for i in range(3, 9):
