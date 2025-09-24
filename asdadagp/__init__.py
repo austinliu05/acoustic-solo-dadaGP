@@ -15,6 +15,7 @@ from .processor import (
     measures_playing_order,
     tokens_to_measures,
     tracks_check,
+    pre_decoding_processing
 )
 
 __all__ = [
@@ -32,4 +33,5 @@ __all__ = [
     "get_string_tunings",
     "tokens_to_measures",
     "measures_playing_order",
+    "pre_decoding_processing",
 ]

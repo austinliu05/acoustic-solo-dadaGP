@@ -3,7 +3,6 @@ import re
 from dataclasses import dataclass
 from typing import List, Tuple, Union
 
-from tqdm import tqdm
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -351,12 +350,8 @@ def pre_decoding_processing(tokens: List[str]) -> Tuple[List[str], List[str]]:
         # Build head without append inside hot loop
         head = tokens[:3] + ["start"]
         tune_in_token = False
-        # NOTE: this used to be tokens[10:], which skips 7 extra items.
-        # If that was intentional, keep 10; if not, 4 is more typical.
+        # Not include the string tunings if they are in the header
         start_idx = 10
-
-    # If get_string_tunings is expensive and only depends on head,
-    # consider passing just head or caching upstream if possible.
 
     tunings = get_string_tunings(tokens)
 
@@ -371,11 +366,11 @@ def pre_decoding_processing(tokens: List[str]) -> Tuple[List[str], List[str]]:
 
     # Iterate body
     for t in tokens[start_idx:]:
-        # Normalize note/rest prefix
+        # add track prefix if the token preprocessing removed them
         if startswith(t, "note") or startswith(t, "rest"):
             t = "clean0:" + t
 
-        # If we're inside a tuning block, strip the final ":<string>" from note tokens
+        # Remove the string tuning suffix in note/clean tokens if exists
         if tune_in_token and (
             startswith(t, "note")
             or (startswith(t, "clean") and not endswith(t, "rest"))
