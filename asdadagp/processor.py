@@ -3,7 +3,6 @@ import re
 from dataclasses import dataclass
 from typing import List, Tuple, Union
 
-
 _LOGGER = logging.getLogger(__name__)
 
 

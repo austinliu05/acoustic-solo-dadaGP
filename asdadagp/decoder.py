@@ -316,11 +316,13 @@ def tokens2guitarpro(
         new_track.channel.effectChannel = max(15, 9 + i)
         if instrument == "clean0":
             new_track.channel.instrument = 27  # Electric Guitar (clean)
-            new_track.color = gp.Color(r=255, g=150, b=100, a=1)
+            # new_track.color = gp.Color(r=255, g=150, b=100, a=1)
+            new_track.color = gp.Color(r=255, g=150, b=100)
             new_track.name = "Clean Guitar"
         elif instrument == "clean1":
             new_track.channel.instrument = 26  # Electric Guitar (jazz)
-            new_track.color = gp.Color(r=255, g=180, b=100, a=1)
+            # new_track.color = gp.Color(r=255, g=180, b=100, a=1)
+            new_track.color = gp.Color(r=255, g=180, b=100)
             new_track.name = "Clean Guitar 2"
         else:
             assert False, "Unsupported instrument"

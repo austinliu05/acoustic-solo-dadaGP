@@ -1,3 +1,5 @@
+from typing import List, Tuple
+
 import guitarpro
 import guitarpro as gp
 
@@ -40,18 +42,18 @@ def get_tuning_type(instrument_group, strings):
 
 
 # Takes a NoteString like "E4" and gives you a few different representations. Mostly interested in midi_number
-def noteNumber(n):
+def noteNumber(n: str) -> Tuple[int, str, int, int]:
     octave = int(n[-1:])
     pitch_class = n[:-1]
     pitch_value = guitarpro.PitchClass(pitch_class).value
-    midi_number = (octave) * 12 + pitch_value
+    midi_number = 12 + octave * 12 + pitch_value
     return octave, pitch_class, pitch_value, midi_number
 
 
 # how many steps did we downtune the guitar?
 # Note: dropD or dropAD does not count as downtuning in our representation
 # The extra low notes will be represented as frets -2 and -1 on an E-standard-like fretboard
-def guitar_downtunage(strings):
+def guitar_downtunage(strings: List[str]) -> int:
     strnums = [noteNumber(s)[3] for s in strings]
     return strnums[0] - 64
 

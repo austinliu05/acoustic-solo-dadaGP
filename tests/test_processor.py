@@ -63,18 +63,18 @@ def test_get_string_tunings(celtic_tuning_gp_path, multi_tracks_gp_path):
             tuning_results == correct_tuning
         ), f"Expected {correct_tuning}, got {tuning_results}"
 
-    # celtic_tunings = [
-    #     "D4",
-    #     "A3",
-    #     "G3",
-    #     "D3",
-    #     "A2",
-    #     "D2",
-    # ]
-    celtic_tunings = ["D5", "A4", "G4", "D4", "A3", "D3"]
+    celtic_tunings = [
+        "D4",
+        "A3",
+        "G3",
+        "D3",
+        "A2",
+        "D2",
+    ]
+    # celtic_tunings = ["D5", "A4", "G4", "D4", "A3", "D3"]
 
-    # dyens_tuning = ["E4", "B3", "G3", "D3", "G2", "F2"]
-    dyens_tuning = ["E5", "B4", "G4", "D4", "G3", "F3"]
+    dyens_tuning = ["E4", "B3", "G3", "D3", "G2", "F2"]
+    # dyens_tuning = ["E5", "B4", "G4", "D4", "G3", "F3"]
     gp_file_tuning(
         celtic_tuning_gp_path,
         celtic_tunings,

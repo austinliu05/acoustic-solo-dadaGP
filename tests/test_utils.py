@@ -26,15 +26,15 @@ def test_diff():
 
 
 def test_note_number():
-    assert noteNumber("C#1") == (1, "C#", 1, 13)
-    assert noteNumber("E5") == (5, "E", 4, 64)
+    assert noteNumber("C#1") == (1, "C#", 1, 25)
+    assert noteNumber("E5") == (5, "E", 4, 76)
 
 
 def test_downtune():
     # Tests
-    assert guitar_downtunage(["E5", "B4", "G4", "D4", "A3", "E3"]) == 0
-    assert guitar_downtunage(["E5", "B4", "G4", "D4", "A3", "D3"]) == 0
-    assert guitar_downtunage(["D5", "A4", "F4", "C4", "G3", "C3"]) == -2
+    assert guitar_downtunage(["E5", "B4", "G4", "D4", "A3", "E3"]) == 12
+    assert guitar_downtunage(["E5", "B4", "G4", "D4", "A3", "D3"]) == 12
+    assert guitar_downtunage(["D5", "A4", "F4", "C4", "G3", "C3"]) == 10
 
 
 def test_time_support():
@@ -54,9 +54,9 @@ def test_load_score():
     new_track = gp.Track(blankgp5)
     strings = ["E5", "B4", "G4", "D4", "A3", "E3"]
     new_track.strings = convert_strings_for_pygp(strings)
-    assert new_track.strings[0].value == 64
+    assert new_track.strings[0].value == 76
     # print(new_track.strings)
     # Test pitchshift
     new_track.strings = convert_strings_for_pygp(strings, -2)
     # print(new_track.strings)
-    assert new_track.strings[0].value == 62
+    assert new_track.strings[0].value == 74
