@@ -2,8 +2,8 @@ import os
 
 import guitarpro as gp
 import pytest
-from asdadagp.decoder import asdadagp_decode, tokens2guitarpro
-from asdadagp.encoder import asdadagp_encode, guitarpro2tokens
+from asdadagp.decoder import tokens2guitarpro
+from asdadagp.encoder import guitarpro2tokens
 from asdadagp.processor import pre_decoding_processing, tracks_check
 
 DATA_FOLDER_PATH = os.path.join(
@@ -46,14 +46,35 @@ def test_encode_decode(gp_path):
                         decoded_note = decoded_beat.notes[l]
                         assert read_note.value == decoded_note.value
                         assert read_note.string == decoded_note.string
-                        assert read_note.realValue == decoded_note.realValue
+                        read_effect = read_note.effect
+                        decoded_effect = decoded_note.effect
+                        assert read_effect.harmonic == decoded_effect.harmonic
+                        assert read_effect.bend == decoded_effect.bend
+                        assert read_effect.vibrato == decoded_effect.vibrato
+                        assert read_effect.hammer == decoded_effect.hammer
+                        assert read_effect.trill == decoded_effect.trill
+                        assert (
+                            read_effect.tremoloPicking == decoded_effect.tremoloPicking
+                        )
+                        assert read_effect.grace == decoded_effect.grace
+                        assert read_effect.palmMute == decoded_effect.palmMute
+                        assert read_effect.letRing == decoded_effect.letRing
+                        assert read_effect.staccato == decoded_effect.staccato
+                        assert read_effect.ghostNote == decoded_effect.ghostNote
+                        assert (
+                            read_effect.accentuatedNote
+                            == decoded_effect.accentuatedNote
+                        )
+                        assert (
+                            read_effect.heavyAccentuatedNote
+                            == decoded_effect.heavyAccentuatedNote
+                        )
+                        assert read_effect.slides == decoded_effect.slides
 
         encoded_tokens = guitarpro2tokens(decoded_song, "", verbose, note_tuning)
         assert tokens == encoded_tokens
 
     read_song = gp.parse(gp_path)
-    actual_test(read_song, True, False)
     for note_tuning in [True, False]:
         for verbose in [True, False]:
-            print(f"Testing with note_tuning={note_tuning}, verbose={verbose}")
             actual_test(read_song, note_tuning, verbose)

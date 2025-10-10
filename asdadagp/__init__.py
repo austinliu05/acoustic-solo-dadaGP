@@ -13,9 +13,9 @@ from .encoder import asdadagp_encode, guitarpro2tokens
 from .processor import (
     get_string_tunings,
     measures_playing_order,
+    pre_decoding_processing,
     tokens_to_measures,
     tracks_check,
-    pre_decoding_processing
 )
 
 __all__ = [
