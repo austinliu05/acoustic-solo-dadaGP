@@ -27,6 +27,7 @@ This project is a **fork** of [`dada-bots/dadaGP`](https://github.com/dada-bots/
 ## What’s Changed
 
 - **Enhanced Acoustic Support** — optimized defaults and checks for acoustic/clean guitar usage.
+- **Compatibility with pyguitarpro** — works with `pyguitarpro>=0.9`.
 - **Alternative Tunings** — supports non‑standard tunings (drop D, Celtic, etc.).
 - **Multi‑track Handling** — process up to 3 acoustic/clean tracks; optional merge‑down to one.
 - **Refined CLI** — ergonomic `asdadagp` tool for encode/decode/process/info.
